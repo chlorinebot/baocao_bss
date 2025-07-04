@@ -9,7 +9,4 @@ export declare class RolesController {
         message: string;
         role: Role;
     }>;
-    initDefaultRoles(): Promise<{
-        message: string;
-    }>;
 }

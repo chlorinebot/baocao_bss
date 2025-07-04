@@ -42,15 +42,6 @@ let RolesController = class RolesController {
             throw new common_1.HttpException('Có lỗi xảy ra khi tạo role', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async initDefaultRoles() {
-        try {
-            await this.rolesService.createDefaultRoles();
-            return { message: 'Default roles created successfully' };
-        }
-        catch (error) {
-            throw new common_1.HttpException('Có lỗi xảy ra khi tạo default roles', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 };
 exports.RolesController = RolesController;
 __decorate([
@@ -73,12 +64,6 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], RolesController.prototype, "create", null);
-__decorate([
-    (0, common_1.Post)('init'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], RolesController.prototype, "initDefaultRoles", null);
 exports.RolesController = RolesController = __decorate([
     (0, common_1.Controller)('roles'),
     __metadata("design:paramtypes", [roles_service_1.RolesService])

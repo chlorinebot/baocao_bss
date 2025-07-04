@@ -31,24 +31,6 @@ let RolesService = class RolesService {
     async findByName(role_name) {
         return await this.roleRepository.findOne({ where: { role_name } });
     }
-    async createDefaultRoles() {
-        const adminRole = await this.findOne(1);
-        if (!adminRole) {
-            await this.roleRepository.save({
-                role_id: 1,
-                role_name: 'admin',
-                description: 'Người quản trị hệ thống với đầy đủ quyền hạn'
-            });
-        }
-        const userRole = await this.findOne(2);
-        if (!userRole) {
-            await this.roleRepository.save({
-                role_id: 2,
-                role_name: 'user',
-                description: 'Người dùng thông thường với quyền hạn bình thường'
-            });
-        }
-    }
     async create(roleData) {
         const role = this.roleRepository.create(roleData);
         return await this.roleRepository.save(role);

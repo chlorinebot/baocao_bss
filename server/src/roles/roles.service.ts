@@ -22,28 +22,6 @@ export class RolesService {
     return await this.roleRepository.findOne({ where: { role_name } });
   }
 
-  async createDefaultRoles(): Promise<void> {
-    // Tạo role admin nếu chưa tồn tại
-    const adminRole = await this.findOne(1);
-    if (!adminRole) {
-      await this.roleRepository.save({
-        role_id: 1,
-        role_name: 'admin',
-        description: 'Người quản trị hệ thống với đầy đủ quyền hạn'
-      });
-    }
-
-    // Tạo role user nếu chưa tồn tại
-    const userRole = await this.findOne(2);
-    if (!userRole) {
-      await this.roleRepository.save({
-        role_id: 2,
-        role_name: 'user',
-        description: 'Người dùng thông thường với quyền hạn bình thường'
-      });
-    }
-  }
-
   async create(roleData: Partial<Role>): Promise<Role> {
     const role = this.roleRepository.create(roleData);
     return await this.roleRepository.save(role);

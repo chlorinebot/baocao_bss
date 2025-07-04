@@ -35,17 +35,4 @@ export class RolesController {
       );
     }
   }
-
-  @Post('init')
-  async initDefaultRoles(): Promise<{ message: string }> {
-    try {
-      await this.rolesService.createDefaultRoles();
-      return { message: 'Default roles created successfully' };
-    } catch (error) {
-      throw new HttpException(
-        'Có lỗi xảy ra khi tạo default roles',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
 } 

@@ -276,9 +276,8 @@ export default function DashboardPage() {
     }
 
     try {
-      // Update basic user information (without password)
+      // Update basic user information (without password and username)
       const basicUpdateData = {
-        username: editFormData.username,
         email: editFormData.email,
         firstName: editFormData.firstName,
         lastName: editFormData.lastName,
@@ -295,7 +294,8 @@ export default function DashboardPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Lỗi khi cập nhật thông tin cơ bản');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Lỗi khi cập nhật thông tin cơ bản (${response.status})`);
       }
 
       // Update password separately if provided
@@ -675,7 +675,12 @@ export default function DashboardPage() {
                   value={editFormData.username}
                   onChange={handleEditFormChange}
                   className={styles.formInput}
+                  readOnly
+                  style={{ backgroundColor: '#f8f9fa', color: '#6c757d' }}
                 />
+                <small style={{ color: '#6c757d', fontSize: '12px' }}>
+                  * Tên đăng nhập không thể thay đổi
+                </small>
               </div>
               
               <div className={styles.formGroup}>

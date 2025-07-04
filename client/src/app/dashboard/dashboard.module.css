@@ -1017,6 +1017,18 @@
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
+.formInput:read-only {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed;
+  border-color: #dee2e6;
+}
+
+.formInput:read-only:focus {
+  border-color: #dee2e6;
+  box-shadow: none;
+}
+
 .formSelect {
   cursor: pointer;
 }

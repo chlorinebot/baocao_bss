@@ -65,7 +65,7 @@ __decorate([
 ], User.prototype, "role_id", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => role_entity_1.Role),
-    (0, typeorm_1.JoinColumn)({ name: 'role_id' }),
+    (0, typeorm_1.JoinColumn)({ name: 'role_id', referencedColumnName: 'role_id' }),
     __metadata("design:type", role_entity_1.Role)
 ], User.prototype, "role", void 0);
 __decorate([
