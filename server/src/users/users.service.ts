@@ -1,8 +1,9 @@
-import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 
 @Injectable()
 export class UsersService {
@@ -83,6 +84,35 @@ export class UsersService {
   }
 
   async update(id: number, userData: Partial<User>): Promise<User | null> {
+    // Không cho phép update username
+    if (userData.username) {
+      throw new BadRequestException('Không thể thay đổi tên đăng nhập');
+    }
+
+    // Validate email nếu có
+    if (userData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userData.email)) {
+        throw new BadRequestException('Email không đúng định dạng');
+      }
+
+      // Kiểm tra email đã tồn tại chưa (trừ user hiện tại)
+      const existingUserByEmail = await this.userRepository.findOne({ 
+        where: { email: userData.email } 
+      });
+      if (existingUserByEmail && existingUserByEmail.id !== id) {
+        throw new ConflictException('Email đã được sử dụng');
+      }
+    }
+
+    // Validate tên và họ
+    if (userData.firstName && userData.firstName.trim().length === 0) {
+      throw new BadRequestException('Họ không được để trống');
+    }
+    if (userData.lastName && userData.lastName.trim().length === 0) {
+      throw new BadRequestException('Tên không được để trống');
+    }
+
     // If password is being updated, hash it
     if (userData.password) {
       const saltRounds = 10;
@@ -104,5 +134,16 @@ export class UsersService {
   // Method to verify password
   async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
     return await bcrypt.compare(plainPassword, hashedPassword);
+  }
+
+  // Method to hash password
+  async hashPassword(password: string): Promise<string> {
+    const saltRounds = 10;
+    return await bcrypt.hash(password, saltRounds);
+  }
+
+  // Method to update password
+  async updatePassword(id: number, hashedPassword: string): Promise<void> {
+    await this.userRepository.update(id, { password: hashedPassword });
   }
 } 

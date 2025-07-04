@@ -46,7 +46,14 @@ async function bootstrap() {
         const app = await core_1.NestFactory.create(app_module_1.AppModule, {
             logger: false,
         });
-        app.enableCors();
+        app.enableCors({
+            origin: true,
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+            allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+            credentials: true,
+            preflightContinue: false,
+            optionsSuccessStatus: 204
+        });
         const port = process.env.PORT || 3000;
         await app.listen(port);
         console.log('✅ Server khởi động thành công!');

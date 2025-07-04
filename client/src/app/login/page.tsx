@@ -42,7 +42,8 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3000/auth/login', {
+      // Gọi API đăng nhập thực tế
+      const response = await fetch('http://localhost:3000/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -52,14 +53,26 @@ export default function LoginPage() {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Lưu token và thông tin user
         localStorage.setItem('token', data.access_token);
-        window.location.href = '/dashboard';
+        localStorage.setItem('userInfo', JSON.stringify(data.user));
+
+        // Chuyển hướng dựa trên role
+        if (data.user.role_id === 1) {
+          // Admin -> Dashboard
+          window.location.href = '/dashboard';
+        } else {
+          // User thông thường -> User interface
+          window.location.href = '/user';
+        }
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Đăng nhập thất bại');
       }
     } catch (err) {
-      setError('Có lỗi xảy ra. Vui lòng thử lại.');
+      console.error('Login error:', err);
+      setError('Không thể kết nối tới server. Vui lòng kiểm tra kết nối mạng.');
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +152,7 @@ export default function LoginPage() {
           <div className={styles.footer}>
           <p className={styles.linkText}>
             Bằng cách đăng nhập vào đây, bạn đã chấp nhận 
-            <Link href="/dieu-khoan-dich-vu" className={styles.link}> điều khoản và dịch vụ</Link> của phần mềm này
+            <Link href="/dieu-khoan-dich-vu" className={styles.link}> điều khoản và dịch vụ</Link> của phần mềm này!
             </p>
           <p className={styles.linkText}>
             Bạn quên mật khẩu? Vui lòng liên hệ đến quản trị viên để được cấp lại mật khẩu.
@@ -156,7 +169,7 @@ export default function LoginPage() {
       </div>
       <footer>
         <div className={styles.footerContent}>
-          <p>&copy; 2024 By KimTuan to 
+          <p>&copy; 2025 By KimTuan to 
             <span className={styles.footerLogo}>
               <Image
                 src="/img/logo_telsoft.jpg"

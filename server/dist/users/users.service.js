@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const user_entity_1 = require("../entities/user.entity");
 const bcrypt = require("bcrypt");
+const common_2 = require("@nestjs/common");
 let UsersService = class UsersService {
     userRepository;
     constructor(userRepository) {
@@ -37,31 +38,31 @@ let UsersService = class UsersService {
     }
     async create(userData) {
         if (!userData.username || !userData.email || !userData.password) {
-            throw new common_1.BadRequestException('Tên đăng nhập, email và mật khẩu là bắt buộc');
+            throw new common_2.BadRequestException('Tên đăng nhập, email và mật khẩu là bắt buộc');
         }
         if (!userData.firstName || !userData.lastName) {
-            throw new common_1.BadRequestException('Họ và tên là bắt buộc');
+            throw new common_2.BadRequestException('Họ và tên là bắt buộc');
         }
         const existingUserByUsername = await this.findByUsername(userData.username);
         if (existingUserByUsername) {
-            throw new common_1.ConflictException('Tên đăng nhập đã tồn tại');
+            throw new common_2.ConflictException('Tên đăng nhập đã tồn tại');
         }
         const existingUserByEmail = await this.findByEmail(userData.email);
         if (existingUserByEmail) {
-            throw new common_1.ConflictException('Email đã được sử dụng');
+            throw new common_2.ConflictException('Email đã được sử dụng');
         }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(userData.email)) {
-            throw new common_1.BadRequestException('Email không đúng định dạng');
+            throw new common_2.BadRequestException('Email không đúng định dạng');
         }
         if (userData.username.length < 3) {
-            throw new common_1.BadRequestException('Tên đăng nhập phải có ít nhất 3 ký tự');
+            throw new common_2.BadRequestException('Tên đăng nhập phải có ít nhất 3 ký tự');
         }
         if (userData.username.includes(' ')) {
-            throw new common_1.BadRequestException('Tên đăng nhập không được chứa khoảng trắng');
+            throw new common_2.BadRequestException('Tên đăng nhập không được chứa khoảng trắng');
         }
         if (userData.password.length < 6) {
-            throw new common_1.BadRequestException('Mật khẩu phải có ít nhất 6 ký tự');
+            throw new common_2.BadRequestException('Mật khẩu phải có ít nhất 6 ký tự');
         }
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
@@ -74,6 +75,27 @@ let UsersService = class UsersService {
         return await this.userRepository.save(user);
     }
     async update(id, userData) {
+        if (userData.username) {
+            throw new common_2.BadRequestException('Không thể thay đổi tên đăng nhập');
+        }
+        if (userData.email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(userData.email)) {
+                throw new common_2.BadRequestException('Email không đúng định dạng');
+            }
+            const existingUserByEmail = await this.userRepository.findOne({
+                where: { email: userData.email }
+            });
+            if (existingUserByEmail && existingUserByEmail.id !== id) {
+                throw new common_2.ConflictException('Email đã được sử dụng');
+            }
+        }
+        if (userData.firstName && userData.firstName.trim().length === 0) {
+            throw new common_2.BadRequestException('Họ không được để trống');
+        }
+        if (userData.lastName && userData.lastName.trim().length === 0) {
+            throw new common_2.BadRequestException('Tên không được để trống');
+        }
         if (userData.password) {
             const saltRounds = 10;
             userData.password = await bcrypt.hash(userData.password, saltRounds);
@@ -89,6 +111,13 @@ let UsersService = class UsersService {
     }
     async verifyPassword(plainPassword, hashedPassword) {
         return await bcrypt.compare(plainPassword, hashedPassword);
+    }
+    async hashPassword(password) {
+        const saltRounds = 10;
+        return await bcrypt.hash(password, saltRounds);
+    }
+    async updatePassword(id, hashedPassword) {
+        await this.userRepository.update(id, { password: hashedPassword });
     }
 };
 exports.UsersService = UsersService;

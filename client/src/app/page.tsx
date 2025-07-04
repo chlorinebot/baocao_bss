@@ -58,7 +58,7 @@ export default function Home() {
 
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
-          <p>&copy; 2024 By KimTuan to 
+          <p>&copy; 2025 By KimTuan to 
             <span className={styles.footerLogo}>
               <Image
                 src="/img/logo_telsoft.jpg"

@@ -21,18 +21,14 @@
 }
 
 .headerLogo {
-  background: rgba(231, 76, 60, 0.05);
   padding: 8px 16px;
   border-radius: 12px;
-  border: 2px solid rgba(231, 76, 60, 0.1);
   transition: all 0.3s ease;
 }
 
 .headerLogo:hover {
-  background: rgba(231, 76, 60, 0.1);
-  border-color: rgba(231, 76, 60, 0.2);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .headerLogoImg {
@@ -69,7 +65,73 @@
   box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
 }
 
-.content {
+/* Main Layout */
+.mainLayout {
+  display: flex;
+  gap: 30px;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  height: fit-content;
+  position: sticky;
+  top: 20px;
+}
+
+.sidebarMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  font-size: 16px;
+  color: #374151;
+  width: 100%;
+}
+
+.menuItem:hover {
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(52, 152, 219, 0.1) 100%);
+  transform: translateX(5px);
+}
+
+.menuItem.active {
+  background: linear-gradient(135deg, #e74c3c 0%, #3498db 100%);
+  color: white;
+  transform: translateX(0);
+}
+
+.menuIcon {
+  font-size: 1.3rem;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menuText {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 30px;
@@ -105,7 +167,8 @@
   opacity: 0.9;
 }
 
-.userInfo {
+/* Content Sections */
+.contentSection {
   background: white;
   padding: 30px;
   border-radius: 15px;
@@ -113,12 +176,66 @@
 }
 
 .sectionTitle {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 600;
   color: #1a1a1a;
   margin: 0 0 24px 0;
   border-bottom: 2px solid #e5e7eb;
-  padding-bottom: 8px;
+  padding-bottom: 12px;
+}
+
+/* Statistics Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+}
+
+.statCard {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.statIcon {
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, #e74c3c 0%, #3498db 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  min-width: 50px;
+}
+
+.statContent h3 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.statNumber {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+/* User Info */
+.userInfo, .adminInfo {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .infoGrid {
@@ -162,6 +279,437 @@
   border-color: #fecaca !important;
 }
 
+/* Management Sections */
+.userManagement, .roleManagement {
+  padding: 40px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+/* User Management */
+.userManagementHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.userManagementActions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.searchContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  padding: 12px 16px 12px 45px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 300px;
+  transition: all 0.3s ease;
+  background: white;
+  color: #000000;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  background: white;
+  color: #000000;
+}
+
+.searchInput::placeholder {
+  color: #6b7280;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 15px;
+  color: #000000;
+  font-size: 16px;
+}
+
+.addUserButton {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.addUserButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.refreshButton {
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refreshButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.refreshIcon {
+  font-size: 14px;
+  animation: spin 1s linear infinite;
+}
+
+.addIcon {
+  font-size: 14px;
+}
+
+.userTableContainer {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tableInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.lastUpdate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loadingTable {
+  padding: 60px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.userTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.userTable th {
+  background: #f8f9fa;
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #000000;
+  border-bottom: 2px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.userTable th:hover {
+  background: #e9ecef;
+  transform: translateY(-1px);
+}
+
+.userTable th:first-child {
+  padding-left: 20px;
+}
+
+.userTable th:last-child {
+  padding-right: 20px;
+}
+
+.userTable th[style*="cursor: pointer"] {
+  user-select: none;
+}
+
+.userTable th[style*="cursor: pointer"]:active {
+  transform: translateY(0);
+}
+
+.sortIcon {
+  margin-left: 4px;
+  font-size: 12px;
+  color: #3498db;
+  transition: all 0.2s ease;
+}
+
+.userTable td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+  color: #000000;
+}
+
+.userTable td:first-child {
+  padding-left: 20px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.userTable td:last-child {
+  padding-right: 20px;
+}
+
+.userTable tbody tr:hover {
+  background: #f9fafb;
+}
+
+.roleBadge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.roleAdmin {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.roleUser {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.roleSystem {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statusOnline {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusOnline::before {
+  content: '●';
+  color: #22c55e;
+}
+
+.statusOffline {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.statusOffline::before {
+  content: '●';
+  color: #9ca3af;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.editButton, .deleteButton, .lockButton {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editButton {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.editButton:hover {
+  background: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+.deleteButton {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.deleteButton:hover {
+  background: #fecaca;
+  transform: translateY(-1px);
+}
+
+.lockButton {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.lockButton:hover {
+  background: #fde68a;
+  transform: translateY(-1px);
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #e5e7eb;
+}
+
+.paginationInfo {
+  font-size: 14px;
+  color: #000000;
+}
+
+.paginationButtons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.paginationButton {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #000000;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.paginationButton.active {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  border-color: #3498db;
+}
+
+.paginationButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .mainLayout {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .sidebar {
+    width: 100%;
+    position: static;
+  }
+  
+  .sidebarMenu {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+  }
+  
+  .menuItem {
+    min-width: 200px;
+    flex-shrink: 0;
+  }
+  
+  .menuItem:hover {
+    transform: translateY(-2px);
+  }
+  
+  .statsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .userManagementHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .userManagementActions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .searchInput {
+    width: 100%;
+  }
+
+  .userTable {
+    font-size: 13px;
+  }
+
+  .userTable th, .userTable td {
+    padding: 12px 8px;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .editButton, .deleteButton, .lockButton {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 768px) {
   .container {
     padding: 10px;
@@ -202,17 +750,97 @@
     font-size: 1.8rem;
   }
   
-  .welcomeText {
-    font-size: 1rem;
-  }
-  
-  .userInfo {
+  .sidebar {
     padding: 20px;
   }
   
-  .infoGrid {
+  .menuItem {
+    padding: 12px 16px;
+    font-size: 14px;
+    min-width: 160px;
+  }
+  
+  .menuIcon {
+    font-size: 1.1rem;
+  }
+  
+  .contentSection {
+    padding: 20px;
+  }
+  
+  .sectionTitle {
+    font-size: 1.5rem;
+  }
+  
+  .statsGrid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
+  }
+  
+  .statCard {
+    padding: 20px;
+  }
+  
+  .statIcon {
+    font-size: 2rem;
+  }
+  
+  .statNumber {
+    font-size: 1.5rem;
+  }
+
+  .userTable {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .userTable thead, .userTable tbody, .userTable th, .userTable td, .userTable tr {
+    display: block;
+  }
+
+  .userTable thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .userTable tr {
+    border: 1px solid #e5e7eb;
+    margin-bottom: 10px;
+    padding: 16px;
+    border-radius: 8px;
+    background: white;
+    position: relative;
+  }
+
+  .userTable td {
+    border: none;
+    padding: 8px 0;
+    position: relative;
+    padding-left: 50% !important;
+    text-align: left;
+  }
+
+  .userTable td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 6px;
+    width: 45%;
+    padding-right: 10px;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .paginationButtons {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }
 
@@ -223,12 +851,10 @@
   
   .headerLogo {
     padding: 4px 8px;
-    border-radius: 8px;
   }
   
   .headerLogoImg {
     width: 60px;
-    height: auto;
   }
   
   .title {
@@ -243,7 +869,233 @@
     font-size: 1.5rem;
   }
   
-  .userInfo {
-    padding: 16px;
+  .sidebar {
+    padding: 15px;
   }
+  
+  .menuItem {
+    padding: 10px 12px;
+    font-size: 13px;
+    min-width: 140px;
+  }
+  
+  .contentSection {
+    padding: 15px;
+  }
+  
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .searchInput {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .userTable td {
+    padding-left: 40% !important;
+  }
+
+  .userTable td:before {
+    width: 35%;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formRow {
+  display: flex;
+  gap: 16px;
+}
+
+.formRow .formGroup {
+  flex: 1;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.formInput, .formSelect {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+  color: #000000;
+}
+
+.formInput:focus, .formSelect:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.formSelect {
+  cursor: pointer;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8f9fa;
+  border-radius: 0 0 12px 12px;
+}
+
+.cancelButton, .saveButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.cancelButton {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.cancelButton:hover {
+  background: #e5e7eb;
+}
+
+.saveButton {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+}
+
+.saveButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+/* Password Section */
+.passwordSection {
+  margin: 24px 0 16px 0;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+}
+
+.passwordSection h4 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.passwordNote {
+  margin: 0;
+  color: #6c757d;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.passwordRestriction {
+  margin: 16px 0;
+  padding: 16px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  border-left: 4px solid #f39c12;
+}
+
+.passwordRestriction p {
+  margin: 0;
+  color: #856404;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
 } 

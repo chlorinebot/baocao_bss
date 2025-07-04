@@ -12,4 +12,6 @@ export declare class UsersService {
     remove(id: number): Promise<void>;
     count(): Promise<number>;
     verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean>;
+    hashPassword(password: string): Promise<string>;
+    updatePassword(id: number, hashedPassword: string): Promise<void>;
 }

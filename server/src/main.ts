@@ -56,7 +56,14 @@ async function bootstrap() {
     });
     
     // Enable CORS if needed
-    app.enableCors();
+    app.enableCors({
+      origin: true, // Cho phép tất cả origins
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+      credentials: true,
+      preflightContinue: false,
+      optionsSuccessStatus: 204
+    });
     
     const port = process.env.PORT || 3000;
     await app.listen(port);
