@@ -8,7 +8,7 @@ export const databaseConfig: TypeOrmModuleOptions = {
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'bc_bss',
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-  synchronize: false, // Vô hiệu hóa tự động tạo bảng
+  synchronize: false, // Tắt lại để đảm bảo an toàn
   logging: false, // Tắt logging SQL queries
   ssl: false, // Không sử dụng SSL như yêu cầu
 }; 

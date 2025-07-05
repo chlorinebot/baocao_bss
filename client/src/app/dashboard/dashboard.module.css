@@ -1,6 +1,7 @@
 .container {
   min-height: 100vh;
   padding: 20px;
+  padding-top: 120px; /* Space for fixed header */
 }
 
 .header {
@@ -12,6 +13,11 @@
   border-radius: 15px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   margin-bottom: 30px;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 100;
 }
 
 .headerLeft {
@@ -71,43 +77,47 @@
   gap: 30px;
 }
 
-/* Sidebar */
+/* Sidebar - Fixed position with compact height */
 .sidebar {
   width: 280px;
   background: white;
   border-radius: 15px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 25px;
-  height: fit-content;
-  position: sticky;
-  top: 20px;
+  height: fit-content; /* Auto height instead of full height */
+  max-height: calc(100vh - 140px); /* Max height with scroll if needed */
+  position: fixed;
+  top: 120px; /* Below fixed header */
+  left: 20px;
+  overflow-y: auto;
+  z-index: 50;
 }
 
 .sidebarMenu {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .menuItem {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 15px 20px;
+  gap: 12px;
+  padding: 12px 16px;
   background: transparent;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
   text-align: left;
-  font-size: 16px;
+  font-size: 15px;
   color: #374151;
   width: 100%;
 }
 
 .menuItem:hover {
   background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(52, 152, 219, 0.1) 100%);
-  transform: translateX(5px);
+  transform: translateX(3px);
 }
 
 .menuItem.active {
@@ -117,8 +127,8 @@
 }
 
 .menuIcon {
-  font-size: 1.3rem;
-  min-width: 24px;
+  font-size: 1.2rem;
+  min-width: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -135,6 +145,7 @@
   display: flex;
   flex-direction: column;
   gap: 30px;
+  margin-left: 320px; /* Space for fixed sidebar */
 }
 
 .loading {
@@ -647,14 +658,32 @@
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .mainLayout {
-    flex-direction: column;
-    gap: 20px;
+  .container {
+    padding-top: 140px; /* More space for header on tablet */
+  }
+  
+  .header {
+    padding: 15px 20px;
+    border-radius: 10px;
   }
   
   .sidebar {
     width: 100%;
+    height: auto;
     position: static;
+    top: auto;
+    left: auto;
+    margin-bottom: 20px;
+    border-radius: 10px;
+  }
+  
+  .mainContent {
+    margin-left: 0; /* Remove left margin on tablet */
+  }
+  
+  .mainLayout {
+    flex-direction: column;
+    gap: 20px;
   }
   
   .sidebarMenu {
@@ -713,6 +742,7 @@
 @media (max-width: 768px) {
   .container {
     padding: 10px;
+    padding-top: 160px; /* More space for stacked header on mobile */
   }
   
   .header {
@@ -720,6 +750,17 @@
     flex-direction: column;
     gap: 15px;
     text-align: center;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    border-radius: 8px;
+  }
+  
+  .sidebar {
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
   }
   
   .headerLeft {
@@ -748,10 +789,6 @@
   
   .welcomeTitle {
     font-size: 1.8rem;
-  }
-  
-  .sidebar {
-    padding: 20px;
   }
   
   .menuItem {
@@ -922,13 +959,13 @@
 
 .modal {
   background: white;
-  border-radius: 12px;
+  border-radius: 8px;
+  max-width: 700px;
   width: 90%;
-  max-width: 500px;
   max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   animation: modalSlideIn 0.3s ease-out;
+  overflow: hidden;
+  position: relative;
 }
 
 @keyframes modalSlideIn {
@@ -948,15 +985,24 @@
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-radius: 12px 12px 0 0;
 }
 
 .modalHeader h3 {
   margin: 0;
-  font-size: 1.25rem;
+  color: #1f2937;
+  font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+}
+
+.modalTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .closeButton {
@@ -976,7 +1022,33 @@
 }
 
 .modalBody {
-  padding: 24px;
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(90vh - 120px);
+  position: relative;
+  color: #1f2937;
+}
+
+.modalBody p {
+  color: #1f2937;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.modalBody strong {
+  color: #1f2937;
+}
+
+.modalBody div {
+  color: #1f2937;
+}
+
+.modalBody ul {
+  color: #1f2937;
+}
+
+.modalBody li {
+  color: #1f2937;
 }
 
 .errorAlert {
@@ -1019,11 +1091,24 @@
 
 .formRow {
   display: flex;
-  gap: 16px;
+  gap: 20px;
 }
 
 .formRow .formGroup {
   flex: 1;
+}
+
+.formRowThree {
+  display: flex;
+  gap: 16px;
+}
+
+.formRowThree .formGroup {
+  flex: 1;
+}
+
+.formRowThree .formGroup:first-child {
+  flex: 2;
 }
 
 .formGroup label {
@@ -1280,4 +1365,297 @@
   .toastMessage {
     font-size: 13px;
   }
+}
+
+/* Work Schedule Styles */
+.shiftBadge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 80px;
+  display: inline-block;
+}
+
+.shiftCasáng {
+  background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.shiftCachiều {
+  background: linear-gradient(135deg, #dbeafe 0%, #3b82f6 100%);
+  color: #1e40af;
+  border: 1px solid #2563eb;
+}
+
+.shiftCađêm {
+  background: linear-gradient(135deg, #e0e7ff 0%, #6366f1 100%);
+  color: #3730a3;
+  border: 1px solid #4f46e5;
+}
+
+.addButton {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.addButton:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.addButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.tableContainer {
+  overflow-x: auto;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .shiftBadge {
+    font-size: 11px;
+    padding: 3px 6px;
+    min-width: 70px;
+  }
+  
+  .addButton {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+.searchDropdownContainer {
+  position: relative;
+}
+
+/* When dropdown is near bottom of modal, show it above the input */
+.searchDropdownContainer.dropup .searchDropdown {
+  top: auto;
+  bottom: 100%;
+  margin-bottom: 2px;
+}
+
+.searchDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 1001;
+}
+
+.dropdownItem {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+  color: #000000;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dropdownItem:hover {
+  background-color: #f5f5f5;
+  color: #000000;
+}
+
+.dropdownItem:last-child {
+  border-bottom: none;
+}
+
+.dropdownNoResult {
+  padding: 10px 12px;
+  color: #6b7280;
+  font-size: 14px;
+  font-style: italic;
+  text-align: center;
+  background-color: #f9f9f9;
+  border-bottom: none;
+}
+
+/* Custom scrollbar for dropdown */
+.searchDropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.searchDropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.searchDropdown::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.searchDropdown::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Delete User Modal Styles */
+.userInfoBox {
+  background: #f3f4f6;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+  border: 1px solid #e5e7eb;
+}
+
+.userInfoBox div {
+  margin-bottom: 8px;
+  color: #1f2937;
+}
+
+.userInfoBox div:last-child {
+  margin-bottom: 0;
+}
+
+.scheduleWarning {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  border-left: 4px solid #dc2626;
+}
+
+.scheduleWarning p {
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.warningTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #dc2626;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.warningIcon {
+  font-size: 18px;
+}
+
+.scheduleList {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 12px 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.scheduleItem {
+  padding: 8px 0;
+  border-bottom: 1px solid #fecaca;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.scheduleItem:last-child {
+  border-bottom: none;
+}
+
+.warningNote {
+  color: #1f2937;
+  font-weight: 500;
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.warningMessage {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid #dc2626;
+  margin: 16px 0;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.deleteConfirmButton {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.deleteConfirmButton:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.deleteConfirmButton:active {
+  transform: translateY(0);
+}
+
+.disabledButton {
+  background: #9ca3af;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.disabledButton:hover {
+  background: #9ca3af;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Bootstrap Icons Styling */
+.menuIcon i,
+.statIcon i,
+.searchIcon i,
+.refreshIcon i,
+.addIcon i,
+.errorIcon i,
+.warningIcon i,
+.toastIcon i {
+  font-size: inherit;
+  color: inherit;
+}
+
+.actionButtons i {
+  margin-right: 4px;
+}
+
+.sortIcon i {
+  font-size: 12px;
+  margin-left: 4px;
 } 

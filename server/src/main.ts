@@ -110,6 +110,7 @@ async function bootstrap() {
     console.log(`🌐 Server đang chạy tại: http://localhost:${port}`);
     console.log(`🏥 Health check: http://localhost:${port}/health`);
     console.log(`👥 Users API: http://localhost:${port}/users`);
+    console.log(`💼 Work Assignment API: http://localhost:${port}/work-schedule`);
     console.log('📝 Server sẵn sàng xử lý requests...');
     
   } catch (error) {

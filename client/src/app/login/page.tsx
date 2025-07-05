@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './login.module.css';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -15,8 +16,36 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [welcomeMessage, setWelcomeMessage] = useState('');
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
+    // Kiểm tra xem user đã đăng nhập chưa
+    const checkAuthStatus = () => {
+      const token = localStorage.getItem('token');
+      const userInfo = localStorage.getItem('userInfo');
+      
+      if (token && userInfo) {
+        try {
+          const user = JSON.parse(userInfo);
+          // Chuyển hướng dựa trên role
+          if (user.role_id === 1) {
+            router.push('/dashboard');
+          } else {
+            router.push('/user');
+          }
+          return;
+        } catch (error) {
+          // Nếu userInfo không hợp lệ, xóa token
+          localStorage.removeItem('token');
+          localStorage.removeItem('userInfo');
+        }
+      }
+      
+      setIsCheckingAuth(false);
+    };
+
+    checkAuthStatus();
+
     // Kiểm tra nếu user vừa được redirect từ register page
     const fromRegister = searchParams.get('from') === 'register';
     if (fromRegister) {
@@ -26,7 +55,21 @@ export default function LoginPage() {
         setWelcomeMessage('');
       }, 10000);
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
+
+  // Hiển thị loading trong khi kiểm tra auth
+  if (isCheckingAuth) {
+    return (
+      <div className={`${styles.container} telsoft-gradient-static`}>
+        <div className={styles.loginCard}>
+          <div className={styles.loading}>
+            <div className={styles.spinner}></div>
+            <p>Đang kiểm tra trạng thái đăng nhập...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

@@ -1,8 +1,58 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 
 export default function Home() {
+  const router = useRouter();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    // Kiểm tra xem user đã đăng nhập chưa
+    const checkAuthStatus = () => {
+      const token = localStorage.getItem('token');
+      const userInfo = localStorage.getItem('userInfo');
+      
+      if (token && userInfo) {
+        try {
+          const user = JSON.parse(userInfo);
+          // Chuyển hướng dựa trên role
+          if (user.role_id === 1) {
+            router.push('/dashboard');
+          } else {
+            router.push('/user');
+          }
+          return;
+        } catch (error) {
+          // Nếu userInfo không hợp lệ, xóa token
+          localStorage.removeItem('token');
+          localStorage.removeItem('userInfo');
+        }
+      }
+      
+      setIsCheckingAuth(false);
+    };
+
+    checkAuthStatus();
+  }, [router]);
+
+  // Hiển thị loading trong khi kiểm tra auth
+  if (isCheckingAuth) {
+    return (
+      <div className={`${styles.container} telsoft-gradient`}>
+        <main className={styles.main}>
+          <div className={styles.loading}>
+            <div className={styles.spinner}></div>
+            <p>Đang kiểm tra trạng thái đăng nhập...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className={`${styles.container} telsoft-gradient`}>
       <main className={styles.main}>
