@@ -42,6 +42,30 @@ export default function DashboardPage() {
     password: '',
     confirmPassword: ''
   });
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addFormData, setAddFormData] = useState({
+    username: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    birthday: '',
+    role_id: 2,
+    password: '',
+    confirmPassword: ''
+  });
+  const [addModalError, setAddModalError] = useState('');
+  const [editModalError, setEditModalError] = useState('');
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: 'success' | 'error' | 'info';
+    isHiding: boolean;
+  }>({
+    show: false,
+    message: '',
+    type: 'info',
+    isHiding: false
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -105,11 +129,11 @@ export default function DashboardPage() {
         console.log('✅ Đã tải thành công', usersData.length, 'người dùng');
       } else {
         console.error('Failed to fetch users, status:', response.status);
-        alert('Không thể tải danh sách người dùng. Vui lòng thử lại.');
+        showToast('Không thể tải danh sách người dùng. Vui lòng thử lại.', 'error');
       }
     } catch (error) {
       console.error('Error fetching users:', error);
-      alert('Lỗi kết nối server. Vui lòng kiểm tra server có đang chạy không.');
+      showToast('Lỗi kết nối server. Vui lòng kiểm tra server có đang chạy không.', 'error');
     } finally {
       setUsersLoading(false);
     }
@@ -230,6 +254,7 @@ export default function DashboardPage() {
 
   const handleEditUser = (userData: User) => {
     setEditingUser(userData);
+    setEditModalError('');
     setEditFormData({
       username: userData.username,
       email: userData.email,
@@ -246,6 +271,7 @@ export default function DashboardPage() {
   const handleCloseEditModal = () => {
     setShowEditModal(false);
     setEditingUser(null);
+    setEditModalError('');
     setEditFormData({
       username: '',
       email: '',
@@ -264,14 +290,21 @@ export default function DashboardPage() {
       ...prev,
       [name]: name === 'role_id' ? Number(value) : value
     }));
+    // Clear error when user starts typing
+    if (editModalError) {
+      setEditModalError('');
+    }
   };
 
   const handleSaveEdit = async () => {
     if (!editingUser) return;
 
+    // Reset error
+    setEditModalError('');
+
     // Validate password if provided
     if (editFormData.password && editFormData.password !== editFormData.confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp!');
+      setEditModalError('Mật khẩu xác nhận không khớp!');
       return;
     }
 
@@ -295,7 +328,8 @@ export default function DashboardPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Lỗi khi cập nhật thông tin cơ bản (${response.status})`);
+        setEditModalError(errorData.message || `Lỗi khi cập nhật thông tin cơ bản (${response.status})`);
+        return;
       }
 
       // Update password separately if provided
@@ -314,7 +348,8 @@ export default function DashboardPage() {
 
         if (!passwordResponse.ok) {
           const errorData = await passwordResponse.json();
-          throw new Error(errorData.message || 'Lỗi khi đổi mật khẩu');
+          setEditModalError(errorData.message || 'Lỗi khi đổi mật khẩu');
+          return;
         }
       }
 
@@ -324,12 +359,12 @@ export default function DashboardPage() {
         u.id === editingUser.id ? { ...u, ...updatedUser } : u
       ));
       
-      alert(editFormData.password ? 'Cập nhật thông tin và đổi mật khẩu thành công!' : 'Cập nhật thông tin người dùng thành công!');
+      showToast(editFormData.password ? 'Cập nhật thông tin và đổi mật khẩu thành công!' : 'Cập nhật thông tin người dùng thành công!', 'success');
       handleCloseEditModal();
       fetchUsers(); // Refresh the list
     } catch (error) {
       console.error('Error updating user:', error);
-      alert(error instanceof Error ? error.message : 'Lỗi kết nối server');
+      setEditModalError('Lỗi kết nối server. Vui lòng thử lại.');
     }
   };
 
@@ -348,6 +383,113 @@ export default function DashboardPage() {
     }
     
     return false;
+  };
+
+  const handleShowAddModal = () => {
+    setShowAddModal(true);
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    setAddModalError('');
+    setAddFormData({
+      username: '',
+      email: '',
+      firstName: '',
+      lastName: '',
+      birthday: '',
+      role_id: 2,
+      password: '',
+      confirmPassword: ''
+    });
+  };
+
+  const handleAddFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setAddFormData(prev => ({
+      ...prev,
+      [name]: name === 'role_id' ? Number(value) : value
+    }));
+    // Clear error when user starts typing
+    if (addModalError) {
+      setAddModalError('');
+    }
+  };
+
+  const handleAddUser = async () => {
+    // Reset error
+    setAddModalError('');
+
+    // Validation
+    if (!addFormData.username || !addFormData.email || !addFormData.firstName || 
+        !addFormData.lastName || !addFormData.password) {
+      setAddModalError('Vui lòng điền đầy đủ thông tin bắt buộc!');
+      return;
+    }
+
+    if (addFormData.password !== addFormData.confirmPassword) {
+      setAddModalError('Mật khẩu xác nhận không khớp!');
+      return;
+    }
+
+    if (addFormData.password.length < 6) {
+      setAddModalError('Mật khẩu phải có ít nhất 6 ký tự!');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:3000/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: addFormData.username,
+          email: addFormData.email,
+          firstName: addFormData.firstName,
+          lastName: addFormData.lastName,
+          birthday: addFormData.birthday,
+          role_id: addFormData.role_id,
+          password: addFormData.password
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setAddModalError(errorData.message || 'Lỗi khi thêm người dùng mới');
+        return;
+      }
+
+      showToast('Thêm người dùng mới thành công!', 'success');
+      handleCloseAddModal();
+      fetchUsers(); // Refresh the user list
+    } catch (error) {
+      console.error('Error adding user:', error);
+      setAddModalError('Lỗi kết nối server. Vui lòng thử lại.');
+    }
+  };
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({
+      show: true,
+      message,
+      type,
+      isHiding: false
+    });
+    
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      hideToast();
+    }, 3000);
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, isHiding: true }));
+    
+    // Wait for fade animation to complete before hiding
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false, isHiding: false }));
+    }, 300); // Match the CSS animation duration
   };
 
   const renderContent = () => {
@@ -412,7 +554,7 @@ export default function DashboardPage() {
                   <span className={styles.refreshIcon}>🔄</span>
                   {usersLoading ? 'Đang tải...' : 'Làm mới'}
                 </button>
-                <button className={styles.addUserButton}>
+                <button className={styles.addUserButton} onClick={handleShowAddModal}>
                   <span className={styles.addIcon}>➕</span>
                   Thêm người dùng mới
                 </button>
@@ -667,6 +809,13 @@ export default function DashboardPage() {
             </div>
             
             <div className={styles.modalBody}>
+              {editModalError && (
+                <div className={styles.errorAlert}>
+                  <span className={styles.errorIcon}>⚠️</span>
+                  <span className={styles.errorMessage}>{editModalError}</span>
+                </div>
+              )}
+              
               <div className={styles.formGroup}>
                 <label>Tên đăng nhập:</label>
                 <input
@@ -803,6 +952,159 @@ export default function DashboardPage() {
                 Lưu thay đổi
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add User Modal */}
+      {showAddModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3>Thêm người dùng mới</h3>
+              <button 
+                className={styles.closeButton}
+                onClick={handleCloseAddModal}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              {addModalError && (
+                <div className={styles.errorAlert}>
+                  <span className={styles.errorIcon}>⚠️</span>
+                  <span className={styles.errorMessage}>{addModalError}</span>
+                </div>
+              )}
+              
+              <div className={styles.formGroup}>
+                <label>Tên đăng nhập:</label>
+                <input
+                  type="text"
+                  name="username"
+                  value={addFormData.username}
+                  onChange={handleAddFormChange}
+                  className={styles.formInput}
+                />
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label>Email:</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={addFormData.email}
+                  onChange={handleAddFormChange}
+                  className={styles.formInput}
+                />
+              </div>
+              
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Họ:</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={addFormData.firstName}
+                    onChange={handleAddFormChange}
+                    className={styles.formInput}
+                  />
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label>Tên:</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={addFormData.lastName}
+                    onChange={handleAddFormChange}
+                    className={styles.formInput}
+                  />
+                </div>
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label>Ngày sinh:</label>
+                <input
+                  type="date"
+                  name="birthday"
+                  value={addFormData.birthday}
+                  onChange={handleAddFormChange}
+                  className={styles.formInput}
+                />
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label>Vai trò:</label>
+                <select
+                  name="role_id"
+                  value={addFormData.role_id}
+                  onChange={handleAddFormChange}
+                  className={styles.formSelect}
+                >
+                  <option value={1}>Admin</option>
+                  <option value={2}>User</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Mật khẩu:</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={addFormData.password}
+                  onChange={handleAddFormChange}
+                  className={styles.formInput}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Xác nhận mật khẩu:</label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={addFormData.confirmPassword}
+                  onChange={handleAddFormChange}
+                  className={styles.formInput}
+                />
+              </div>
+            </div>
+            
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.cancelButton}
+                onClick={handleCloseAddModal}
+              >
+                Hủy
+              </button>
+              <button 
+                className={styles.saveButton}
+                onClick={handleAddUser}
+              >
+                Thêm người dùng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`${styles.toast} ${styles[`toast${toast.type.charAt(0).toUpperCase() + toast.type.slice(1)}`]} ${toast.isHiding ? styles.toastHiding : ''}`}>
+          <div className={styles.toastContent}>
+            <span className={styles.toastIcon}>
+              {toast.type === 'success' && '✅'}
+              {toast.type === 'error' && '❌'}
+              {toast.type === 'info' && 'ℹ️'}
+            </span>
+            <span className={styles.toastMessage}>{toast.message}</span>
+            <button 
+              className={styles.toastClose}
+              onClick={hideToast}
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}
