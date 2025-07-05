@@ -89,7 +89,6 @@ async function bootstrap() {
         console.log(`🏥 Health check: http://localhost:${port}/health`);
         console.log(`👥 Users API: http://localhost:${port}/users`);
         console.log('📝 Server sẵn sàng xử lý requests...');
-        console.log('═'.repeat(60));
     }
     catch (error) {
         console.error('❌ Lỗi khởi động server:', error.message);
