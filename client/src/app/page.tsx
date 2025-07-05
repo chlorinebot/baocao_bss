@@ -79,9 +79,11 @@ export default function Home() {
           </p>
           <div className={styles.actions}>
             <Link href="/login" className={styles.loginButton}>
+              <i className="bi bi-box-arrow-in-right"></i>
               Đăng nhập
             </Link>
             <Link href="/register" className={styles.registerButton}>
+              <i className="bi bi-person-plus-fill"></i>
               Đăng ký
             </Link>
           </div>
@@ -89,17 +91,17 @@ export default function Home() {
 
         <div className={styles.features}>
           <div className={styles.feature}>
-            <div className={styles.featureIcon}>🔐</div>
+            <div className={styles.featureIcon}><i className="bi bi-shield-lock-fill"></i></div>
             <h3>Bảo mật cao</h3>
             <p>Hệ thống bảo mật đa lớp với mã hóa mạnh mẽ</p>
           </div>
           <div className={styles.feature}>
-            <div className={styles.featureIcon}>⚡</div>
+            <div className={styles.featureIcon}><i className="bi bi-lightning-charge-fill"></i></div>
             <h3>Hiệu suất tối ưu</h3>
             <p>Giao diện nhanh chóng và responsive trên mọi thiết bị</p>
           </div>
           <div className={styles.feature}>
-            <div className={styles.featureIcon}>👥</div>
+            <div className={styles.featureIcon}><i className="bi bi-people-fill"></i></div>
             <h3>Quản lý người dùng</h3>
             <p>Công cụ quản lý tài khoản và phân quyền linh hoạt</p>
           </div>

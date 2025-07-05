@@ -380,7 +380,8 @@ export default function RegisterPage() {
             disabled={isLoading}
             className={styles.submitButton}
           >
-            {isLoading ? 'Đang đăng ký...' : 'Đăng Ký'}
+            <i className="bi bi-person-plus-fill"></i>
+            {isLoading ? 'Đang đăng ký...' : '  Đăng Ký'}
           </button>
 
           <div className={styles.footer}>

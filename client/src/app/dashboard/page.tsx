@@ -1373,7 +1373,7 @@ export default function DashboardPage() {
               className={`${styles.menuItem} ${activeMenu === 'users' ? styles.active : ''}`}
               onClick={() => handleMenuClick('users')}
             >
-              <span className={styles.menuIcon}><i className="bi bi-people-fill"></i></span>
+              <span className={styles.menuIcon}><i className="bi bi-person-lines-fill"></i></span>
               <span className={styles.menuText}>Quản lý người dùng</span>
             </button>
             
@@ -1381,7 +1381,7 @@ export default function DashboardPage() {
               className={`${styles.menuItem} ${activeMenu === 'work-schedule' ? styles.active : ''}`}
               onClick={() => handleMenuClick('work-schedule')}
             >
-              <span className={styles.menuIcon}><i className="bi bi-calendar3"></i></span>
+              <span className={styles.menuIcon}><i className="bi bi-people-fill"></i></span>
               <span className={styles.menuText}>Quản lý phân công</span>
             </button>
             

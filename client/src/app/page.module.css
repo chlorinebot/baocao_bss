@@ -100,6 +100,14 @@
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.loginButton i {
+  font-size: 1.1rem;
 }
 
 .loginButton:hover {
@@ -112,6 +120,14 @@
   background: white;
   color: #e74c3c;
   border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.registerButton i {
+  font-size: 1.1rem;
 }
 
 .registerButton:hover {
@@ -147,6 +163,12 @@
 .featureIcon {
   font-size: 3rem;
   margin-bottom: 16px;
+  color: white;
+}
+
+.featureIcon i {
+  font-size: inherit;
+  color: inherit;
 }
 
 .feature h3 {

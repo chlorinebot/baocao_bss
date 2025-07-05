@@ -189,7 +189,8 @@ export default function LoginPage() {
             disabled={isLoading}
             className={styles.submitButton}
           >
-            {isLoading ? 'Đang đăng nhập...' : 'Đăng Nhập'}
+            <i className="bi bi-box-arrow-in-right"></i>
+            {isLoading ? 'Đang đăng nhập...' : ' Đăng Nhập'}
           </button>
 
           <div className={styles.footer}>
