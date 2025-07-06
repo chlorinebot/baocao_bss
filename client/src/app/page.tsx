@@ -26,7 +26,7 @@ export default function Home() {
             router.push('/user');
           }
           return;
-        } catch (error) {
+        } catch {
           // Nếu userInfo không hợp lệ, xóa token
           localStorage.removeItem('token');
           localStorage.removeItem('userInfo');

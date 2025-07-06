@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import styles from './dashboard.module.css';
-import { apiService } from '../lib/api';
+import { apiService, Server, CreateServerData, UpdateServerData } from '../lib/api';
 
 interface User {
   id: number;
@@ -41,6 +41,13 @@ interface CreateWorkScheduleDto {
   employee_c: number;
   employee_d: number;
 }
+
+// Interface Server được import từ api.ts để tránh conflict
+// interface Server {
+//   id: number;
+//   server_name: string;
+//   ip: string;
+// }
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -135,7 +142,133 @@ export default function DashboardPage() {
   const [deleteModalError, setDeleteModalError] = useState('');
   const [userAssignedSchedules, setUserAssignedSchedules] = useState<WorkSchedule[]>([]);
 
+  // Delete Schedule Modal States
+  const [showDeleteScheduleModal, setShowDeleteScheduleModal] = useState(false);
+  const [scheduleToDelete, setScheduleToDelete] = useState<WorkSchedule | null>(null);
+  const [deleteScheduleModalError, setDeleteScheduleModalError] = useState('');
+
+  // Server Management States
+  const [servers, setServers] = useState<Server[]>([]);
+  const [filteredServers, setFilteredServers] = useState<Server[]>([]);
+  const [serversLoading, setServersLoading] = useState(false);
+  const [serverSearchTerm, setServerSearchTerm] = useState('');
+  const [currentServerPage, setCurrentServerPage] = useState(1);
+  const [serversPerPage] = useState(10);
+  const [serverSortField, setServerSortField] = useState<keyof Server>('id');
+  const [serverSortDirection, setServerSortDirection] = useState<'asc' | 'desc'>('asc');
+  
+  // Server Modal States
+  const [showAddServerModal, setShowAddServerModal] = useState(false);
+  const [showEditServerModal, setShowEditServerModal] = useState(false);
+  const [showDeleteServerModal, setShowDeleteServerModal] = useState(false);
+  const [editingServer, setEditingServer] = useState<Server | null>(null);
+  const [serverToDelete, setServerToDelete] = useState<Server | null>(null);
+  const [addServerFormData, setAddServerFormData] = useState<CreateServerData>({
+    server_name: '',
+    ip: ''
+  });
+  const [editServerFormData, setEditServerFormData] = useState<UpdateServerData>({
+    server_name: '',
+    ip: ''
+  });
+  const [addServerModalError, setAddServerModalError] = useState('');
+  const [editServerModalError, setEditServerModalError] = useState('');
+  const [deleteServerModalError, setDeleteServerModalError] = useState('');
+
   const router = useRouter();
+
+  const hideToast = useCallback(() => {
+    setToast(prev => ({ ...prev, isHiding: true }));
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false, isHiding: false }));
+    }, 300);
+  }, []);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({
+      show: true,
+      message,
+      type,
+      isHiding: false
+    });
+    
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      hideToast();
+    }, 3000);
+  }, [hideToast]);
+
+  // Wrap functions with useCallback to prevent unnecessary re-renders
+  const fetchWorkSchedules = useCallback(async () => {
+    setWorkSchedulesLoading(true);
+    try {
+      const response = await fetch('http://localhost:3000/work-schedule');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setWorkSchedules(data.data);
+          setFilteredSchedules(data.data);
+          console.log('✅ Đã tải thành công', data.data.length, 'ca làm việc');
+        } else {
+          showToast(data.message || 'Không thể tải danh sách ca làm việc', 'error');
+        }
+      } else {
+        showToast('Lỗi server khi tải ca làm việc', 'error');
+      }
+    } catch (error) {
+      console.error('Error fetching work schedules:', error);
+      showToast('Lỗi kết nối server', 'error');
+    } finally {
+      setWorkSchedulesLoading(false);
+    }
+  }, [showToast]);
+
+  const sortUsers = useCallback((users: User[]) => {
+    return [...users].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+
+      // Handle different data types
+      if (sortField === 'id' || sortField === 'role_id') {
+        aValue = Number(aValue);
+        bValue = Number(bValue);
+      } else if (sortField === 'birthday' || sortField === 'createdAt' || sortField === 'updatedAt') {
+        aValue = new Date(aValue as string).getTime();
+        bValue = new Date(bValue as string).getTime();
+      } else if (sortField === 'isActive') {
+        aValue = aValue ? 1 : 0;
+        bValue = bValue ? 1 : 0;
+      } else {
+        // For string fields, combine firstName and lastName for username sorting
+        if (sortField === 'username') {
+          aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
+          bValue = `${b.firstName} ${b.lastName}`.toLowerCase();
+        } else {
+          aValue = String(aValue).toLowerCase();
+          bValue = String(bValue).toLowerCase();
+        }
+      }
+
+      if (aValue < bValue) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [sortField, sortDirection]);
+
+  const sortServers = useCallback((servers: Server[]) => {
+    return servers.sort((a, b) => {
+      const aValue = a[serverSortField];
+      const bValue = b[serverSortField];
+      
+      if (aValue < bValue) return serverSortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return serverSortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [serverSortField, serverSortDirection]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -187,7 +320,7 @@ export default function DashboardPage() {
       localStorage.removeItem('userInfo');
       router.push('/login');
     }
-  }, [router]);
+  }, [router, fetchWorkSchedules]);
 
   // Fetch users data
   const fetchUsers = async () => {
@@ -228,42 +361,6 @@ export default function DashboardPage() {
     return sortDirection === 'asc' ? <i className="bi bi-chevron-up"></i> : <i className="bi bi-chevron-down"></i>;
   };
 
-  const sortUsers = (users: User[]) => {
-    return [...users].sort((a, b) => {
-      let aValue = a[sortField];
-      let bValue = b[sortField];
-
-      // Handle different data types
-      if (sortField === 'id' || sortField === 'role_id') {
-        aValue = Number(aValue);
-        bValue = Number(bValue);
-      } else if (sortField === 'birthday' || sortField === 'createdAt' || sortField === 'updatedAt') {
-        aValue = new Date(aValue as string).getTime();
-        bValue = new Date(bValue as string).getTime();
-      } else if (sortField === 'isActive') {
-        aValue = aValue ? 1 : 0;
-        bValue = bValue ? 1 : 0;
-      } else {
-        // For string fields, combine firstName and lastName for username sorting
-        if (sortField === 'username') {
-          aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
-          bValue = `${b.firstName} ${b.lastName}`.toLowerCase();
-        } else {
-          aValue = String(aValue).toLowerCase();
-          bValue = String(bValue).toLowerCase();
-        }
-      }
-
-      if (aValue < bValue) {
-        return sortDirection === 'asc' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortDirection === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-  };
-
   // Search functionality
   useEffect(() => {
     let filtered = users;
@@ -282,7 +379,7 @@ export default function DashboardPage() {
     filtered = sortUsers(filtered);
     setFilteredUsers(filtered);
     setCurrentPage(1);
-  }, [searchTerm, users, sortField, sortDirection]);
+  }, [searchTerm, users, sortUsers]);
 
   // Pagination
   const indexOfLastUser = currentPage * usersPerPage;
@@ -302,6 +399,8 @@ export default function DashboardPage() {
       fetchUsers();
     } else if (menuId === 'work-schedule') {
       fetchWorkSchedules();
+    } else if (menuId === 'server-management') {
+      fetchServers();
     }
   };
 
@@ -556,52 +655,7 @@ export default function DashboardPage() {
     }
   };
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setToast({
-      show: true,
-      message,
-      type,
-      isHiding: false
-    });
-    
-    // Auto hide after 3 seconds
-    setTimeout(() => {
-      hideToast();
-    }, 3000);
-  };
-
-  const hideToast = () => {
-    setToast(prev => ({ ...prev, isHiding: true }));
-    setTimeout(() => {
-      setToast(prev => ({ ...prev, show: false, isHiding: false }));
-    }, 300);
-  };
-
   // Work Schedule Management Functions
-  const fetchWorkSchedules = async () => {
-    setWorkSchedulesLoading(true);
-    try {
-      const response = await fetch('http://localhost:3000/work-schedule');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setWorkSchedules(data.data);
-          setFilteredSchedules(data.data);
-          console.log('✅ Đã tải thành công', data.data.length, 'ca làm việc');
-        } else {
-          showToast(data.message || 'Không thể tải danh sách ca làm việc', 'error');
-        }
-      } else {
-        showToast('Lỗi server khi tải ca làm việc', 'error');
-      }
-    } catch (error) {
-      console.error('Error fetching work schedules:', error);
-      showToast('Lỗi kết nối server', 'error');
-    } finally {
-      setWorkSchedulesLoading(false);
-    }
-  };
-
   const fetchAvailableEmployees = async () => {
     try {
       const response = await fetch('http://localhost:3000/work-schedule/employees/available');
@@ -773,12 +827,24 @@ export default function DashboardPage() {
   };
 
   const handleDeleteSchedule = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa phân công này?')) {
+    // Find the schedule to delete
+    const schedule = workSchedules.find(s => s.id === id);
+    if (!schedule) {
+      showToast('Không tìm thấy phân công', 'error');
       return;
     }
 
+    // Show confirmation modal
+    setScheduleToDelete(schedule);
+    setShowDeleteScheduleModal(true);
+    setDeleteScheduleModalError('');
+  };
+
+  const handleConfirmDeleteSchedule = async () => {
+    if (!scheduleToDelete) return;
+
     try {
-      const response = await fetch(`http://localhost:3000/work-schedule/${id}`, {
+      const response = await fetch(`http://localhost:3000/work-schedule/${scheduleToDelete.id}`, {
         method: 'DELETE',
       });
 
@@ -787,13 +853,21 @@ export default function DashboardPage() {
       if (data.success) {
         showToast('Xóa phân công thành công!', 'success');
         fetchWorkSchedules();
+        setShowDeleteScheduleModal(false);
+        setScheduleToDelete(null);
       } else {
-        showToast(data.error || data.message || 'Có lỗi xảy ra khi xóa', 'error');
+        setDeleteScheduleModalError(data.error || data.message || 'Có lỗi xảy ra khi xóa');
       }
     } catch (error) {
       console.error('Error deleting schedule:', error);
-      showToast('Lỗi kết nối server', 'error');
+      setDeleteScheduleModalError('Lỗi kết nối server');
     }
+  };
+
+  const handleCancelDeleteSchedule = () => {
+    setShowDeleteScheduleModal(false);
+    setScheduleToDelete(null);
+    setDeleteScheduleModalError('');
   };
 
   // Search functionality for work schedules
@@ -1015,6 +1089,234 @@ export default function DashboardPage() {
     setUserToDelete(null);
     setUserAssignedSchedules([]);
     setDeleteModalError('');
+  };
+
+  // === SERVER MANAGEMENT FUNCTIONS ===
+
+  // Fetch servers data
+  const fetchServers = async () => {
+    setServersLoading(true);
+    try {
+      const response = await apiService.getServers();
+      if (response.success && response.data) {
+        setServers(response.data);
+        setFilteredServers(response.data);
+        console.log('✅ Đã tải thành công', response.data.length, 'máy chủ');
+      } else {
+        console.error('Failed to fetch servers:', response.error);
+        showToast('Không thể tải danh sách máy chủ. Vui lòng thử lại.', 'error');
+      }
+    } catch (error) {
+      console.error('Error fetching servers:', error);
+      showToast('Lỗi kết nối server. Vui lòng kiểm tra server có đang chạy không.', 'error');
+    } finally {
+      setServersLoading(false);
+    }
+  };
+
+  // Server sorting functionality
+  const handleServerSort = (field: keyof Server) => {
+    if (field === serverSortField) {
+      setServerSortDirection(serverSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setServerSortField(field);
+      setServerSortDirection('asc');
+    }
+  };
+
+  const getServerSortIcon = (field: keyof Server) => {
+    if (field !== serverSortField) {
+      return <i className="bi bi-chevron-expand"></i>;
+    }
+    return serverSortDirection === 'asc' ? <i className="bi bi-chevron-up"></i> : <i className="bi bi-chevron-down"></i>;
+  };
+
+  // Server search functionality
+  useEffect(() => {
+    let filtered = servers;
+    
+    if (serverSearchTerm.trim() !== '') {
+      filtered = servers.filter(server =>
+        server.server_name.toLowerCase().includes(serverSearchTerm.toLowerCase()) ||
+        server.ip.toLowerCase().includes(serverSearchTerm.toLowerCase()) ||
+        server.id.toString().includes(serverSearchTerm)
+      );
+    }
+    
+    // Apply sorting
+    filtered = sortServers(filtered);
+    setFilteredServers(filtered);
+    setCurrentServerPage(1);
+  }, [serverSearchTerm, servers, sortServers]);
+
+  // Server pagination
+  const indexOfLastServer = currentServerPage * serversPerPage;
+  const indexOfFirstServer = indexOfLastServer - serversPerPage;
+  const currentServers = filteredServers.slice(indexOfFirstServer, indexOfLastServer);
+
+  // Add Server Modal Functions
+  const handleShowAddServerModal = () => {
+    setShowAddServerModal(true);
+    setAddServerModalError('');
+    setAddServerFormData({
+      server_name: '',
+      ip: ''
+    });
+  };
+
+  const handleCloseAddServerModal = () => {
+    setShowAddServerModal(false);
+    setAddServerModalError('');
+    setAddServerFormData({
+      server_name: '',
+      ip: ''
+    });
+  };
+
+  const handleAddServerFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setAddServerFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (addServerModalError) {
+      setAddServerModalError('');
+    }
+  };
+
+  const handleAddServer = async () => {
+    // Reset error
+    setAddServerModalError('');
+
+    // Validation
+    if (!addServerFormData.server_name || !addServerFormData.ip) {
+      setAddServerModalError('Vui lòng điền đầy đủ thông tin!');
+      return;
+    }
+
+    // Basic IP validation
+    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    if (!ipRegex.test(addServerFormData.ip)) {
+      setAddServerModalError('Địa chỉ IP không hợp lệ!');
+      return;
+    }
+
+    try {
+      const response = await apiService.createServer(addServerFormData);
+
+      if (response.success) {
+        showToast('Thêm máy chủ mới thành công!', 'success');
+        handleCloseAddServerModal();
+        fetchServers(); // Refresh the server list
+      } else {
+        setAddServerModalError(response.error || 'Lỗi khi thêm máy chủ mới');
+      }
+    } catch (error) {
+      console.error('Error adding server:', error);
+      setAddServerModalError('Lỗi kết nối server. Vui lòng thử lại.');
+    }
+  };
+
+  // Edit Server Modal Functions
+  const handleEditServer = (server: Server) => {
+    setEditingServer(server);
+    setEditServerModalError('');
+    setEditServerFormData({
+      server_name: server.server_name,
+      ip: server.ip
+    });
+    setShowEditServerModal(true);
+  };
+
+  const handleCloseEditServerModal = () => {
+    setShowEditServerModal(false);
+    setEditingServer(null);
+    setEditServerModalError('');
+    setEditServerFormData({
+      server_name: '',
+      ip: ''
+    });
+  };
+
+  const handleEditServerFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditServerFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (editServerModalError) {
+      setEditServerModalError('');
+    }
+  };
+
+  const handleSaveEditServer = async () => {
+    if (!editingServer) return;
+
+    // Reset error
+    setEditServerModalError('');
+
+    // Validation
+    if (!editServerFormData.server_name || !editServerFormData.ip) {
+      setEditServerModalError('Vui lòng điền đầy đủ thông tin!');
+      return;
+    }
+
+    // Basic IP validation
+    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    if (!ipRegex.test(editServerFormData.ip)) {
+      setEditServerModalError('Địa chỉ IP không hợp lệ!');
+      return;
+    }
+
+    try {
+      const response = await apiService.updateServer(editingServer.id, editServerFormData);
+
+      if (response.success) {
+        showToast('Cập nhật máy chủ thành công!', 'success');
+        handleCloseEditServerModal();
+        fetchServers(); // Refresh the server list
+      } else {
+        setEditServerModalError(response.error || 'Lỗi khi cập nhật máy chủ');
+      }
+    } catch (error) {
+      console.error('Error updating server:', error);
+      setEditServerModalError('Lỗi kết nối server. Vui lòng thử lại.');
+    }
+  };
+
+  // Delete Server Modal Functions
+  const handleDeleteServer = (server: Server) => {
+    setServerToDelete(server);
+    setDeleteServerModalError('');
+    setShowDeleteServerModal(true);
+  };
+
+  const handleConfirmDeleteServer = async () => {
+    if (!serverToDelete) return;
+
+    try {
+      const response = await apiService.deleteServer(serverToDelete.id);
+
+      if (response.success) {
+        showToast('Xóa máy chủ thành công!', 'success');
+        setShowDeleteServerModal(false);
+        setServerToDelete(null);
+        fetchServers(); // Refresh server list
+      } else {
+        setDeleteServerModalError(response.error || 'Có lỗi xảy ra khi xóa máy chủ');
+      }
+    } catch (error) {
+      console.error('Error deleting server:', error);
+      setDeleteServerModalError('Có lỗi xảy ra khi xóa máy chủ');
+    }
+  };
+
+  const handleCancelDeleteServer = () => {
+    setShowDeleteServerModal(false);
+    setServerToDelete(null);
+    setDeleteServerModalError('');
   };
 
   const renderContent = () => {
@@ -1285,6 +1587,145 @@ export default function DashboardPage() {
             </div>
           </div>
         );
+      case 'server-management':
+        return (
+          <div className={styles.contentSection}>
+            <div className={styles.userManagementHeader}>
+              <h2 className={styles.sectionTitle}>Danh sách máy chủ</h2>
+              <div className={styles.userManagementActions}>
+                <div className={styles.searchContainer}>
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm theo tên máy chủ..."
+                    value={serverSearchTerm}
+                    onChange={(e) => setServerSearchTerm(e.target.value)}
+                    className={styles.searchInput}
+                  />
+                  <span className={styles.searchIcon}><i className="bi bi-search"></i></span>
+                </div>
+                <button 
+                  className={styles.refreshButton}
+                  onClick={fetchServers}
+                  disabled={serversLoading}
+                >
+                  <i className="bi bi-arrow-clockwise"></i>
+                  {serversLoading ? 'Đang tải...' : 'Làm mới'}
+                </button>
+                <button 
+                  className={styles.addButton}
+                  onClick={handleShowAddServerModal}
+                >
+                  <i className="bi bi-plus-circle"></i>
+                  Thêm máy chủ
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.userTableContainer}>
+              <div className={styles.tableInfo}>
+                <span>Cập nhật theo thời gian thực</span>
+                <span className={styles.lastUpdate}>
+                  <i className="bi bi-arrow-clockwise"></i> Cập nhật gần nhất: {new Date().toLocaleTimeString('vi-VN')}
+                </span>
+              </div>
+              
+              {serversLoading ? (
+                <div className={styles.loadingTable}>Đang tải dữ liệu...</div>
+              ) : (
+                <>
+                  <table className={styles.userTable}>
+                    <thead>
+                      <tr>
+                        <th onClick={() => handleServerSort('id')}>
+                          ID {getServerSortIcon('id')}
+                        </th>
+                        <th onClick={() => handleServerSort('server_name')}>
+                          Tên máy chủ {getServerSortIcon('server_name')}
+                        </th>
+                        <th onClick={() => handleServerSort('ip')}>
+                          Địa chỉ IP {getServerSortIcon('ip')}
+                        </th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {serversLoading ? (
+                        <tr>
+                          <td colSpan={4} className={styles.loadingRow}>
+                            <div className={styles.loadingSpinner}></div>
+                            Đang tải danh sách máy chủ...
+                          </td>
+                        </tr>
+                      ) : currentServers.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className={styles.emptyRow}>
+                            {serverSearchTerm ? 'Không tìm thấy máy chủ nào phù hợp' : 'Chưa có máy chủ nào'}
+                          </td>
+                        </tr>
+                      ) : (
+                        currentServers.map((server) => (
+                          <tr key={server.id}>
+                            <td>{server.id}</td>
+                            <td>{server.server_name}</td>
+                            <td>{server.ip}</td>
+                            <td>
+                              <div className={styles.actionButtons}>
+                                <button 
+                                  className={styles.editButton}
+                                  onClick={() => handleEditServer(server)}
+                                  title="Chỉnh sửa máy chủ"
+                                >
+                                  <i className="bi bi-pencil"></i>
+                                </button>
+                                <button 
+                                  className={styles.deleteButton}
+                                  onClick={() => handleDeleteServer(server)}
+                                  title="Xóa máy chủ"
+                                >
+                                  <i className="bi bi-trash"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                  
+                  <div className={styles.pagination}>
+                    <div className={styles.paginationInfo}>
+                      Hiển thị {indexOfFirstServer + 1} - {Math.min(indexOfLastServer, filteredServers.length)} trên tổng số {filteredServers.length} máy chủ
+                    </div>
+                    <div className={styles.paginationButtons}>
+                      <button 
+                        onClick={() => setCurrentServerPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentServerPage === 1}
+                        className={styles.paginationButton}
+                      >
+                        <i className="bi bi-chevron-left"></i>
+                        Trước
+                      </button>
+                      
+                      <span className={styles.paginationInfo}>
+                        Trang {currentServerPage} / {Math.ceil(filteredServers.length / serversPerPage)} 
+                        ({filteredServers.length} máy chủ)
+                      </span>
+                      
+                      <button 
+                        onClick={() => setCurrentServerPage(prev => Math.min(prev + 1, Math.ceil(filteredServers.length / serversPerPage)))}
+                        disabled={currentServerPage === Math.ceil(filteredServers.length / serversPerPage)}
+                        className={styles.paginationButton}
+                      >
+                        Sau
+                        <i className="bi bi-chevron-right"></i>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        );
       case 'admin-info':
         return (
           <div className={styles.contentSection}>
@@ -1318,6 +1759,138 @@ export default function DashboardPage() {
                   <span>{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</span>
                 </div>
               </div>
+            </div>
+          </div>
+        );
+      case 'servers':
+        return (
+          <div className={styles.content}>
+            <div className={styles.serversHeader}>
+              <h2>Quản lý máy chủ</h2>
+              <div className={styles.serversHeaderActions}>
+                <div className={styles.searchContainer}>
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm theo tên máy chủ..."
+                    value={serverSearchTerm}
+                    onChange={(e) => setServerSearchTerm(e.target.value)}
+                    className={styles.searchInput}
+                  />
+                </div>
+                <button 
+                  className={styles.refreshButton}
+                  onClick={fetchServers}
+                  disabled={serversLoading}
+                >
+                  <i className="bi bi-arrow-clockwise"></i>
+                  {serversLoading ? 'Đang tải...' : 'Làm mới'}
+                </button>
+                <button 
+                  className={styles.addButton}
+                  onClick={handleShowAddServerModal}
+                >
+                  <i className="bi bi-plus-circle"></i>
+                  Thêm máy chủ
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.tableContainer}>
+              <table className={styles.userTable}>
+                <thead>
+                  <tr>
+                    <th onClick={() => handleServerSort('id')}>
+                      ID {getServerSortIcon('id')}
+                    </th>
+                    <th onClick={() => handleServerSort('server_name')}>
+                      Tên máy chủ {getServerSortIcon('server_name')}
+                    </th>
+                    <th onClick={() => handleServerSort('ip')}>
+                      Địa chỉ IP {getServerSortIcon('ip')}
+                    </th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {serversLoading ? (
+                    <tr>
+                      <td colSpan={4} className={styles.loadingRow}>
+                        <div className={styles.loadingSpinner}></div>
+                        Đang tải danh sách máy chủ...
+                      </td>
+                    </tr>
+                  ) : currentServers.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className={styles.emptyRow}>
+                        {serverSearchTerm ? 'Không tìm thấy máy chủ nào phù hợp' : 'Chưa có máy chủ nào'}
+                      </td>
+                    </tr>
+                  ) : (
+                    currentServers.map((server) => (
+                      <tr key={server.id}>
+                        <td>{server.id}</td>
+                        <td>{server.server_name}</td>
+                        <td>{server.ip}</td>
+                        <td>
+                          <div className={styles.actionButtons}>
+                            <button 
+                              className={styles.editButton}
+                              onClick={() => handleEditServer(server)}
+                              title="Chỉnh sửa máy chủ"
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                            <button 
+                              className={styles.deleteButton}
+                              onClick={() => handleDeleteServer(server)}
+                              title="Xóa máy chủ"
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {filteredServers.length > serversPerPage && (
+              <div className={styles.pagination}>
+                <button 
+                  onClick={() => setCurrentServerPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentServerPage === 1}
+                  className={styles.paginationButton}
+                >
+                  <i className="bi bi-chevron-left"></i>
+                  Trước
+                </button>
+                
+                <span className={styles.paginationInfo}>
+                  Trang {currentServerPage} / {Math.ceil(filteredServers.length / serversPerPage)} 
+                  ({filteredServers.length} máy chủ)
+                </span>
+                
+                <button 
+                  onClick={() => setCurrentServerPage(prev => Math.min(prev + 1, Math.ceil(filteredServers.length / serversPerPage)))}
+                  disabled={currentServerPage === Math.ceil(filteredServers.length / serversPerPage)}
+                  className={styles.paginationButton}
+                >
+                  Sau
+                  <i className="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      case 'roles':
+        return (
+          <div className={styles.contentSection}>
+            <h2 className={styles.sectionTitle}>Quản lý vai trò</h2>
+            <div className={styles.roleManagement}>
+              <p>Tính năng quản lý vai trò sẽ được phát triển trong tương lai.</p>
             </div>
           </div>
         );
@@ -1383,6 +1956,14 @@ export default function DashboardPage() {
             >
               <span className={styles.menuIcon}><i className="bi bi-people-fill"></i></span>
               <span className={styles.menuText}>Quản lý phân công</span>
+            </button>
+            
+            <button 
+              className={`${styles.menuItem} ${activeMenu === 'server-management' ? styles.active : ''}`}
+              onClick={() => handleMenuClick('server-management')}
+            >
+              <span className={styles.menuIcon}><i className="bi bi-server"></i></span>
+              <span className={styles.menuText}>Quản lý máy chủ</span>
             </button>
             
             <button 
@@ -2142,6 +2723,179 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Add Server Modal */}
+      {showAddServerModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3>Thêm máy chủ mới</h3>
+              <button 
+                className={styles.closeButton}
+                onClick={handleCloseAddServerModal}
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              {addServerModalError && (
+                <div className={styles.errorAlert}>
+                  <span className={styles.errorIcon}><i className="bi bi-exclamation-triangle-fill"></i></span>
+                  <span className={styles.errorMessage}>{addServerModalError}</span>
+                </div>
+              )}
+              
+              <div className={styles.formGroup}>
+                <label>Tên máy chủ:</label>
+                <input
+                  type="text"
+                  name="server_name"
+                  value={addServerFormData.server_name}
+                  onChange={handleAddServerFormChange}
+                  className={styles.formInput}
+                  placeholder="Nhập tên máy chủ"
+                />
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label>Địa chỉ IP:</label>
+                <input
+                  type="text"
+                  name="ip"
+                  value={addServerFormData.ip}
+                  onChange={handleAddServerFormChange}
+                  className={styles.formInput}
+                  placeholder="Nhập địa chỉ IP (ví dụ: 192.168.1.100)"
+                />
+              </div>
+            </div>
+            
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.cancelButton}
+                onClick={handleCloseAddServerModal}
+              >
+                Hủy
+              </button>
+              <button 
+                className={styles.saveButton}
+                onClick={handleAddServer}
+              >
+                Thêm máy chủ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Server Modal */}
+      {showEditServerModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3>Sửa thông tin máy chủ</h3>
+              <button 
+                className={styles.closeButton}
+                onClick={handleCloseEditServerModal}
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              {editServerModalError && (
+                <div className={styles.errorAlert}>
+                  <span className={styles.errorIcon}><i className="bi bi-exclamation-triangle-fill"></i></span>
+                  <span className={styles.errorMessage}>{editServerModalError}</span>
+                </div>
+              )}
+              
+              <div className={styles.formGroup}>
+                <label>Tên máy chủ:</label>
+                <input
+                  type="text"
+                  name="server_name"
+                  value={editServerFormData.server_name}
+                  onChange={handleEditServerFormChange}
+                  className={styles.formInput}
+                  placeholder="Nhập tên máy chủ"
+                />
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label>Địa chỉ IP:</label>
+                <input
+                  type="text"
+                  name="ip"
+                  value={editServerFormData.ip}
+                  onChange={handleEditServerFormChange}
+                  className={styles.formInput}
+                  placeholder="Nhập địa chỉ IP (ví dụ: 192.168.1.100)"
+                />
+              </div>
+            </div>
+            
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.cancelButton}
+                onClick={handleCloseEditServerModal}
+              >
+                Hủy
+              </button>
+              <button 
+                className={styles.saveButton}
+                onClick={handleSaveEditServer}
+              >
+                Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Server Confirmation Modal */}
+      {showDeleteServerModal && serverToDelete && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>
+                <span className={styles.warningIcon}><i className="bi bi-exclamation-triangle-fill"></i></span>
+                Xác nhận xóa máy chủ
+              </div>
+              <button className={styles.closeButton} onClick={handleCancelDeleteServer}>
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              {deleteServerModalError && (
+                <div className={styles.errorAlert}>
+                  {deleteServerModalError}
+                </div>
+              )}
+              
+              <p>Bạn có chắc chắn muốn xóa máy chủ sau?</p>
+              
+              <div className={styles.userInfoBox}>
+                <div><strong>Tên máy chủ:</strong> {serverToDelete.server_name}</div>
+                <div><strong>Địa chỉ IP:</strong> {serverToDelete.ip}</div>
+              </div>
+              
+              <div className={styles.warningMessage}>
+                <strong><i className="bi bi-exclamation-triangle-fill"></i> Cảnh báo:</strong> Hành động này không thể hoàn tác!
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelButton} onClick={handleCancelDeleteServer}>
+                Hủy
+              </button>
+              <button className={styles.deleteConfirmButton} onClick={handleConfirmDeleteServer}>
+                Xóa máy chủ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {toast.show && (
         <div className={`${styles.toast} ${styles[`toast${toast.type.charAt(0).toUpperCase() + toast.type.slice(1)}`]} ${toast.isHiding ? styles.toastHiding : ''}`}>
@@ -2158,6 +2912,55 @@ export default function DashboardPage() {
             >
               <i className="bi bi-x-lg"></i>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Schedule Confirmation Modal */}
+      {showDeleteScheduleModal && scheduleToDelete && (
+        <div className={styles.modalOverlay}>
+          <div className={`${styles.modal} ${styles.deleteScheduleModal}`}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>
+                <span className={styles.warningIcon}><i className="bi bi-exclamation-triangle-fill"></i></span>
+                Xác nhận xóa phân công
+              </div>
+              <button className={styles.closeButton} onClick={handleCancelDeleteSchedule}>
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              {deleteScheduleModalError && (
+                <div className={styles.errorAlert}>
+                  <span className={styles.errorIcon}><i className="bi bi-exclamation-triangle-fill"></i></span>
+                  <span className={styles.errorMessage}>{deleteScheduleModalError}</span>
+                </div>
+              )}
+              
+              <p>Bạn có chắc chắn muốn xóa phân công này?</p>
+              
+              <div className={styles.userInfoBox}>
+                <div><strong>ID Phân công:</strong> {scheduleToDelete.id}</div>
+                <div><strong>Nhân viên A:</strong> {scheduleToDelete.employee_a_name || 'Không xác định'}</div>
+                <div><strong>Nhân viên B:</strong> {scheduleToDelete.employee_b_name || 'Không xác định'}</div>
+                <div><strong>Nhân viên C:</strong> {scheduleToDelete.employee_c_name || 'Không xác định'}</div>
+                <div><strong>Nhân viên D:</strong> {scheduleToDelete.employee_d_name || 'Không xác định'}</div>
+                <div><strong>Trạng thái:</strong> {scheduleToDelete.active ? 'Đang hoạt động' : 'Không hoạt động'}</div>
+                <div><strong>Ngày tạo:</strong> {formatDateTime(scheduleToDelete.created_at)}</div>
+              </div>
+              
+              <div className={styles.warningMessage}>
+                <strong><i className="bi bi-exclamation-triangle-fill"></i> Cảnh báo:</strong> Hành động này không thể hoàn tác!
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelButton} onClick={handleCancelDeleteSchedule}>
+                Hủy
+              </button>
+              <button className={styles.deleteConfirmButton} onClick={handleConfirmDeleteSchedule}>
+                Xóa phân công
+              </button>
+            </div>
           </div>
         </div>
       )}

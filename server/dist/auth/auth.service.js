@@ -19,16 +19,36 @@ let AuthService = class AuthService {
     }
     async validateUser(username, password) {
         try {
+            console.log(`🔐 Đang xác thực user: ${username}`);
             const user = await this.usersService.findByUsername(username);
             if (!user) {
+                console.log(`❌ Không tìm thấy user: ${username}`);
                 return null;
             }
+            console.log(`✅ Tìm thấy user: ${username}, ID: ${user.id}`);
             const isPasswordValid = await this.usersService.verifyPassword(password, user.password);
             if (!isPasswordValid) {
+                console.log(`❌ Mật khẩu không đúng cho user: ${username}`);
                 return null;
             }
+            console.log(`✅ Mật khẩu đúng cho user: ${username}`);
             const access_token = `token_${user.id}_${Date.now()}`;
-            return {
+            let birthdayString = '';
+            if (user.birthday) {
+                try {
+                    if (user.birthday instanceof Date) {
+                        birthdayString = user.birthday.toISOString().split('T')[0];
+                    }
+                    else if (typeof user.birthday === 'string') {
+                        birthdayString = user.birthday;
+                    }
+                }
+                catch (error) {
+                    console.log('⚠️ Lỗi xử lý birthday:', error.message);
+                    birthdayString = '';
+                }
+            }
+            const loginResponse = {
                 access_token,
                 user: {
                     id: user.id,
@@ -37,14 +57,16 @@ let AuthService = class AuthService {
                     firstName: user.firstName,
                     lastName: user.lastName,
                     role_id: user.role_id,
-                    birthday: user.birthday ? user.birthday.toISOString().split('T')[0] : '',
+                    birthday: birthdayString,
                     createdAt: user.createdAt.toISOString(),
                     updatedAt: user.updatedAt.toISOString()
                 }
             };
+            console.log(`✅ Đăng nhập thành công cho user: ${username}`);
+            return loginResponse;
         }
         catch (error) {
-            console.error('Error in validateUser:', error);
+            console.error('❌ Lỗi trong validateUser:', error);
             return null;
         }
     }

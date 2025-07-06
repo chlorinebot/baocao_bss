@@ -1,25 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './login.module.css';
 
-export default function LoginPage() {
-  const searchParams = useSearchParams();
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [welcomeMessage, setWelcomeMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [welcomeMessage, setWelcomeMessage] = useState('');
 
   useEffect(() => {
-    // Kiểm tra xem user đã đăng nhập chưa
     const checkAuthStatus = () => {
       const token = localStorage.getItem('token');
       const userInfo = localStorage.getItem('userInfo');
@@ -34,7 +33,7 @@ export default function LoginPage() {
             router.push('/user');
           }
           return;
-        } catch (error) {
+        } catch {
           // Nếu userInfo không hợp lệ, xóa token
           localStorage.removeItem('token');
           localStorage.removeItem('userInfo');
@@ -85,8 +84,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Gọi API đăng nhập thực tế
-      const response = await fetch('http://localhost:3000/users/login', {
+      const response = await fetch('http://localhost:3000/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,28 +92,24 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Lưu token và thông tin user
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('userInfo', JSON.stringify(data.user));
+      const data = await response.json();
 
+      if (response.ok && data.success) {
+        // Lưu token và thông tin user
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userInfo', JSON.stringify(data.user));
+        
         // Chuyển hướng dựa trên role
         if (data.user.role_id === 1) {
-          // Admin -> Dashboard
-          window.location.href = '/dashboard';
+          router.push('/dashboard');
         } else {
-          // User thông thường -> User interface
-          window.location.href = '/user';
+          router.push('/user');
         }
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Đăng nhập thất bại');
+        setError(data.message || 'Đăng nhập thất bại');
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Không thể kết nối tới server. Vui lòng kiểm tra kết nối mạng.');
+    } catch {
+      setError('Lỗi kết nối server. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
@@ -228,5 +222,22 @@ export default function LoginPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className={`${styles.container} telsoft-gradient-static`}>
+        <div className={styles.loginCard}>
+          <div className={styles.loading}>
+            <div className={styles.spinner}></div>
+            <p>Đang tải...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 } 

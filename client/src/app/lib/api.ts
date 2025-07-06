@@ -27,7 +27,23 @@ interface User {
   updatedAt: string;
 }
 
-interface ApiResponse<T = any> {
+interface Server {
+  id: number;
+  server_name: string;
+  ip: string;
+}
+
+interface CreateServerData {
+  server_name: string;
+  ip: string;
+}
+
+interface UpdateServerData {
+  server_name?: string;
+  ip?: string;
+}
+
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -119,7 +135,55 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  // === SERVER MANAGEMENT APIs ===
+
+  // Lấy tất cả máy chủ
+  async getServers(): Promise<ApiResponse<Server[]>> {
+    return this.request<Server[]>('/servers');
+  }
+
+  // Lấy máy chủ theo ID
+  async getServer(id: number): Promise<ApiResponse<Server>> {
+    return this.request<Server>(`/servers/${id}`);
+  }
+
+  // Tạo máy chủ mới
+  async createServer(data: CreateServerData): Promise<ApiResponse<Server>> {
+    return this.request<Server>('/servers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Cập nhật máy chủ
+  async updateServer(id: number, data: UpdateServerData): Promise<ApiResponse<Server>> {
+    return this.request<Server>(`/servers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Xóa máy chủ
+  async deleteServer(id: number): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return this.request<{ success: boolean; message: string }>(`/servers/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Đếm tổng số máy chủ
+  async getServersCount(): Promise<ApiResponse<{ count: number }>> {
+    return this.request<{ count: number }>('/servers/count/total');
+  }
 }
 
 export const apiService = new ApiService();
-export type { RegisterData, LoginData, User, ApiResponse }; 
+export type { 
+  RegisterData, 
+  LoginData, 
+  User, 
+  Server, 
+  CreateServerData, 
+  UpdateServerData, 
+  ApiResponse 
+}; 

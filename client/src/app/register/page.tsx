@@ -42,7 +42,7 @@ export default function RegisterPage() {
             router.push('/user');
           }
           return;
-        } catch (error) {
+        } catch {
           // Nếu userInfo không hợp lệ, xóa token
           localStorage.removeItem('token');
           localStorage.removeItem('userInfo');
@@ -183,9 +183,8 @@ export default function RegisterPage() {
       } else {
         setError(response.error || 'Đăng ký thất bại');
       }
-    } catch (err) {
-      console.error('Registration error:', err);
-      setError('Có lỗi không mong muốn xảy ra. Vui lòng thử lại.');
+    } catch {
+      setError('Lỗi kết nối server. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }

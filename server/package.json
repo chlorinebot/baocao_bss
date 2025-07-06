@@ -17,7 +17,15 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "fix-server-id": "ts-node src/migration/fix-server-id.ts",
+    "fix-server-table": "ts-node src/migration/fix-server-table.ts",
+    "fix-server-simple": "ts-node src/migration/fix-server-id-simple.ts",
+    "check-table": "ts-node src/migration/check-table-structure.ts",
+    "fix-auto-increment": "ts-node src/migration/fix-auto-increment.ts",
+    "check-users": "ts-node src/migration/check-users.ts",
+    "reset-admin-password": "ts-node src/migration/reset-admin-password.ts",
+    "test-full-login": "ts-node src/migration/test-full-login.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
