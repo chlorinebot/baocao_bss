@@ -38,6 +38,8 @@ let WorkScheduleService = class WorkScheduleService {
             employee_d: schedule.employee_d,
             active: schedule.active,
             created_at: schedule.created_date,
+            updated_at: schedule.updated_date,
+            activation_date: schedule.activation_date,
             employee_a_name: schedule.employeeA ? `${schedule.employeeA.firstName} ${schedule.employeeA.lastName}` : '',
             employee_b_name: schedule.employeeB ? `${schedule.employeeB.firstName} ${schedule.employeeB.lastName}` : '',
             employee_c_name: schedule.employeeC ? `${schedule.employeeC.firstName} ${schedule.employeeC.lastName}` : '',

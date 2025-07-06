@@ -1,4 +1,4 @@
-# Hệ thống quản lý người dùng
+# Hệ thống quản lý báo cáo BSS-MBF của TELSOFT
 
 Một hệ thống quản lý người dùng hiện đại với giao diện đăng nhập, đăng ký và dashboard được xây dựng bằng Next.js (Frontend) và NestJS (Backend).
 

@@ -7,6 +7,7 @@ export declare class WorkSchedule {
     employee_d: number;
     active: boolean;
     created_date: Date;
+    updated_date: Date;
     activation_date: Date;
     employeeA: User;
     employeeB: User;

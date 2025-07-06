@@ -20,6 +20,7 @@ let WorkSchedule = class WorkSchedule {
     employee_d;
     active;
     created_date;
+    updated_date;
     activation_date;
     employeeA;
     employeeB;
@@ -52,11 +53,28 @@ __decorate([
     __metadata("design:type", Boolean)
 ], WorkSchedule.prototype, "active", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)({ comment: 'Ngày tạo phân công' }),
+    (0, typeorm_1.CreateDateColumn)({
+        type: 'datetime',
+        comment: 'Ngày giờ tạo phân công',
+        default: () => 'CURRENT_TIMESTAMP'
+    }),
     __metadata("design:type", Date)
 ], WorkSchedule.prototype, "created_date", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date', comment: 'Ngày phân công có hiệu lực' }),
+    (0, typeorm_1.UpdateDateColumn)({
+        type: 'datetime',
+        comment: 'Ngày giờ cập nhật cuối cùng',
+        default: () => 'CURRENT_TIMESTAMP',
+        onUpdate: 'CURRENT_TIMESTAMP'
+    }),
+    __metadata("design:type", Date)
+], WorkSchedule.prototype, "updated_date", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'date',
+        comment: 'Ngày phân công có hiệu lực',
+        default: () => 'CURDATE()'
+    }),
     __metadata("design:type", Date)
 ], WorkSchedule.prototype, "activation_date", void 0);
 __decorate([
