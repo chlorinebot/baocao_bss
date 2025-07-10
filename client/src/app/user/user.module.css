@@ -1159,6 +1159,40 @@
   gap: 15px;
 }
 
+.reportButtons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.reportButton {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.reportButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: #f8f9fa;
+  border-color: #007bff;
+}
+
+.reportButton i {
+  font-size: 24px;
+  color: #007bff;
+}
+
 /* Profile Info */
 .profileInfo {
   margin-bottom: 30px;

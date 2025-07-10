@@ -452,36 +452,23 @@ export default function UserPage() {
           {activeSection === 'create-report' && (
             <div className={styles.sectionContent}>
               <h2 className={styles.sectionTitle}>Tạo báo cáo mới</h2>
-              <div className={styles.reportForm}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Tiêu đề báo cáo</label>
-                  <input 
-                    type="text" 
-                    className={styles.formInput}
-                    placeholder="Nhập tiêu đề báo cáo..."
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Loại báo cáo</label>
-                  <select className={styles.formSelect}>
-                    <option value="">Chọn loại báo cáo</option>
-                    <option value="monthly">Báo cáo tháng</option>
-                    <option value="quarterly">Báo cáo quý</option>
-                    <option value="yearly">Báo cáo năm</option>
-                  </select>
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Nội dung báo cáo</label>
-                  <textarea 
-                    className={styles.formTextarea}
-                    rows={6}
-                    placeholder="Nhập nội dung báo cáo..."
-                  ></textarea>
-                </div>
-                <div className={styles.formActions}>
-                  <button className={styles.submitButton}>Tạo báo cáo</button>
-                  <button className={styles.cancelButton}>Hủy</button>
-                </div>
+              <div className={styles.reportButtons}>
+                <button className={styles.reportButton}>
+                  <i className="bi bi-server" style={{ marginRight: '8px' }}></i>
+                  Node Exporter multiple Server Metrics
+                </button>
+                <button className={styles.reportButton}>
+                  <i className="bi bi-database-check" style={{ marginRight: '8px' }}></i>
+                  PostgreSQL Patroni
+                </button>
+                <button className={styles.reportButton}>
+                  <i className="bi bi-database" style={{ marginRight: '8px' }}></i>
+                  PostgreSQL Database
+                </button>
+                <button className={styles.reportButton}>
+                  <i className="bi bi-discord" style={{ marginRight: '8px' }}></i>
+                  Sử dụng Discord giám sát
+                </button>
               </div>
             </div>
           )}
