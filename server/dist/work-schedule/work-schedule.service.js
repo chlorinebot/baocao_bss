@@ -148,6 +148,79 @@ let WorkScheduleService = class WorkScheduleService {
             order: { firstName: 'ASC' }
         });
     }
+    async getUserRole(userId) {
+        try {
+            const currentSchedule = await this.workScheduleRepository.findOne({
+                where: { active: true },
+                order: { created_date: 'DESC' }
+            });
+            if (!currentSchedule) {
+                return { role: 'Chưa được phân công', scheduleId: null };
+            }
+            let role = 'Chưa được phân công';
+            if (currentSchedule.employee_a === userId) {
+                role = 'Nhân viên A';
+            }
+            else if (currentSchedule.employee_b === userId) {
+                role = 'Nhân viên B';
+            }
+            else if (currentSchedule.employee_c === userId) {
+                role = 'Nhân viên C';
+            }
+            else if (currentSchedule.employee_d === userId) {
+                role = 'Nhân viên D';
+            }
+            return { role, scheduleId: currentSchedule.id };
+        }
+        catch (error) {
+            console.error('Lỗi khi lấy vai trò user:', error);
+            return { role: 'Chưa được phân công', scheduleId: null };
+        }
+    }
+    async getUserCurrentShift(userId) {
+        try {
+            const userRole = await this.getUserRole(userId);
+            if (userRole.role === 'Chưa được phân công') {
+                return {
+                    role: userRole.role,
+                    shift: null,
+                    shiftTime: null,
+                    scheduleId: null
+                };
+            }
+            const now = new Date();
+            const currentHour = now.getHours();
+            let shift = '';
+            let shiftTime = '';
+            if (currentHour >= 6 && currentHour < 14) {
+                shift = 'Ca Sáng';
+                shiftTime = '06:00 - 14:00';
+            }
+            else if (currentHour >= 14 && currentHour < 22) {
+                shift = 'Ca Chiều';
+                shiftTime = '14:00 - 22:00';
+            }
+            else {
+                shift = 'Ca Đêm';
+                shiftTime = '22:00 - 06:00';
+            }
+            return {
+                role: userRole.role,
+                shift: shift,
+                shiftTime: shiftTime,
+                scheduleId: userRole.scheduleId
+            };
+        }
+        catch (error) {
+            console.error('Lỗi khi lấy ca trực hiện tại:', error);
+            return {
+                role: 'Chưa được phân công',
+                shift: null,
+                shiftTime: null,
+                scheduleId: null
+            };
+        }
+    }
     async getScheduleStats(startDate, endDate) {
         const schedules = await this.workScheduleRepository
             .createQueryBuilder('ws')

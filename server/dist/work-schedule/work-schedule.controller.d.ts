@@ -13,17 +13,6 @@ export declare class WorkScheduleController {
         error: any;
         data?: undefined;
     }>;
-    findOne(id: number): Promise<{
-        success: boolean;
-        message: string;
-        data: import("../entities/work-schedule.entity").WorkSchedule;
-        error?: undefined;
-    } | {
-        success: boolean;
-        message: string;
-        error: any;
-        data?: undefined;
-    }>;
     findByDate(date: string): Promise<{
         success: boolean;
         message: string;
@@ -39,6 +28,61 @@ export declare class WorkScheduleController {
         success: boolean;
         message: string;
         data: import("../entities/user.entity").User[];
+        error?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        error: any;
+        data?: undefined;
+    }>;
+    getUserRole(userId: number): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            role: string;
+            scheduleId: number | null;
+        };
+        error?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        error: any;
+        data?: undefined;
+    }>;
+    getUserCurrentShift(userId: number): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            role: string;
+            shift: string | null;
+            shiftTime: string | null;
+            scheduleId: number | null;
+        };
+        error?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        error: any;
+        data?: undefined;
+    }>;
+    getScheduleStats(startDate: string, endDate: string): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            totalSchedules: number;
+            schedules: import("../entities/work-schedule.entity").WorkSchedule[];
+        };
+        error?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        error: any;
+        data?: undefined;
+    }>;
+    findOne(id: number): Promise<{
+        success: boolean;
+        message: string;
+        data: import("../entities/work-schedule.entity").WorkSchedule;
         error?: undefined;
     } | {
         success: boolean;
@@ -76,19 +120,5 @@ export declare class WorkScheduleController {
         success: boolean;
         message: string;
         error: any;
-    }>;
-    getScheduleStats(startDate: string, endDate: string): Promise<{
-        success: boolean;
-        message: string;
-        data: {
-            totalSchedules: number;
-            schedules: import("../entities/work-schedule.entity").WorkSchedule[];
-        };
-        error?: undefined;
-    } | {
-        success: boolean;
-        message: string;
-        error: any;
-        data?: undefined;
     }>;
 }

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { LoginResponse } from './auth.controller';
+import { AuthServiceResponse } from './auth.controller';
 
 @Injectable()
 export class AuthService {
   constructor(private readonly usersService: UsersService) {}
 
-  async validateUser(username: string, password: string): Promise<LoginResponse | null> {
+  async validateUser(username: string, password: string): Promise<AuthServiceResponse | null> {
     try {
       console.log(`🔐 Đang xác thực user: ${username}`);
       
@@ -69,4 +69,4 @@ export class AuthService {
       return null;
     }
   }
-} 
+}

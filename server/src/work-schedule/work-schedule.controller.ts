@@ -37,25 +37,6 @@ export class WorkScheduleController {
     }
   }
 
-  // Lấy phân công theo ID
-  @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    try {
-      const schedule = await this.workScheduleService.findOne(id);
-      return {
-        success: true,
-        message: 'Lấy thông tin phân công thành công',
-        data: schedule
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: 'Lỗi khi lấy thông tin phân công',
-        error: error.message
-      };
-    }
-  }
-
   // Lấy phân công theo ngày
   @Get('date/:date')
   async findByDate(@Param('date') date: string) {
@@ -89,6 +70,85 @@ export class WorkScheduleController {
       return {
         success: false,
         message: 'Lỗi khi lấy danh sách nhân viên',
+        error: error.message
+      };
+    }
+  }
+
+  // Lấy vai trò phân công của user
+  @Get('user/:userId/role')
+  async getUserRole(@Param('userId', ParseIntPipe) userId: number) {
+    try {
+      const userRole = await this.workScheduleService.getUserRole(userId);
+      return {
+        success: true,
+        message: 'Lấy vai trò phân công thành công',
+        data: userRole
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Lỗi khi lấy vai trò phân công',
+        error: error.message
+      };
+    }
+  }
+
+  // Lấy thông tin ca trực hiện tại của user
+  @Get('user/:userId/current-shift')
+  async getUserCurrentShift(@Param('userId', ParseIntPipe) userId: number) {
+    try {
+      const shiftInfo = await this.workScheduleService.getUserCurrentShift(userId);
+      return {
+        success: true,
+        message: 'Lấy thông tin ca trực thành công',
+        data: shiftInfo
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Lỗi khi lấy thông tin ca trực',
+        error: error.message
+      };
+    }
+  }
+
+  // Thống kê phân công
+  @Get('stats/report')
+  async getScheduleStats(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string
+  ) {
+    try {
+      const stats = await this.workScheduleService.getScheduleStats(startDate, endDate);
+      return {
+        success: true,
+        message: 'Lấy thống kê phân công thành công',
+        data: stats
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Lỗi khi lấy thống kê phân công',
+        error: error.message
+      };
+    }
+  }
+
+  // Lấy phân công theo ID - đặt cuối cùng để tránh conflict
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    try {
+      const schedule = await this.workScheduleService.findOne(id);
+      return {
+        success: true,
+        message: 'Lấy thông tin phân công thành công',
+        data: schedule
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Lỗi khi lấy thông tin phân công',
         error: error.message
       };
     }
@@ -149,28 +209,6 @@ export class WorkScheduleController {
       return {
         success: false,
         message: 'Lỗi khi xóa phân công',
-        error: error.message
-      };
-    }
-  }
-
-  // Thống kê phân công
-  @Get('stats/report')
-  async getScheduleStats(
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string
-  ) {
-    try {
-      const stats = await this.workScheduleService.getScheduleStats(startDate, endDate);
-      return {
-        success: true,
-        message: 'Lấy thống kê phân công thành công',
-        data: stats
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: 'Lỗi khi lấy thống kê phân công',
         error: error.message
       };
     }

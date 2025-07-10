@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import styles from './user.module.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 interface UserInfo {
   id: number;
@@ -16,9 +17,23 @@ interface UserInfo {
   createdAt: string;
 }
 
+interface UserRole {
+  role: string;
+  scheduleId: number | null;
+}
+
+interface UserShift {
+  role: string;
+  shift: string | null;
+  shiftTime: string | null;
+  scheduleId: number | null;
+}
+
 export default function UserPage() {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userShift, setUserShift] = useState<UserShift | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [currentTime, setCurrentTime] = useState('');
@@ -84,6 +99,9 @@ export default function UserPage() {
       }
 
       setUserInfo(userInfo);
+      // Lấy vai trò phân công và ca trực sau khi có thông tin user
+      fetchUserRole(userInfo.id);
+      fetchUserShift(userInfo.id);
       setIsLoading(false);
     } catch (error) {
       console.error('Error parsing user info:', error);
@@ -92,6 +110,38 @@ export default function UserPage() {
       router.push('/login');
     }
   }, [router]);
+
+  // Hàm lấy vai trò phân công của user
+  const fetchUserRole = async (userId: number) => {
+    try {
+      const response = await fetch(`http://localhost:3000/work-schedule/user/${userId}/role`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUserRole(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy vai trò phân công:', error);
+      setUserRole({ role: 'Chưa được phân công', scheduleId: null });
+    }
+  };
+
+  // Hàm lấy thông tin ca trực hiện tại
+  const fetchUserShift = async (userId: number) => {
+    try {
+      const response = await fetch(`http://localhost:3000/work-schedule/user/${userId}/current-shift`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUserShift(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin ca trực:', error);
+      setUserShift({ role: 'Chưa được phân công', shift: null, shiftTime: null, scheduleId: null });
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -244,8 +294,21 @@ export default function UserPage() {
             />
           </div>
           <div className={styles.headerCenter}>
+            <div className={styles.userRoleDisplay}>
+              <span className={styles.roleLabel}>Vai trò:</span>
+              <span className={styles.roleValue}>
+                {userRole?.role || 'Đang tải...'}
+              </span>
+            </div>
+            {userShift && userShift.shift && (
+              <div className={styles.shiftDisplay}>
+                <i className="bi bi-clock-history" style={{ marginRight: '8px' }}></i>
+                <span className={styles.shiftLabel}>{userShift.shift}</span>
+                <span className={styles.shiftTime}>({userShift.shiftTime})</span>
+              </div>
+            )}
             <div className={styles.timeDisplay}>
-              <span className={styles.timeIcon}>🕐</span>
+              <i className="bi bi-clock" style={{ marginRight: '8px' }}></i>
               <span className={styles.timeText}>{currentTime}</span>
               <span className={styles.timeZone}>(GMT+7)</span>
             </div>
@@ -267,7 +330,7 @@ export default function UserPage() {
                     className={`${styles.sidebarButton} ${activeSection === 'dashboard' ? styles.active : ''}`}
                     onClick={() => handleSidebarClick('dashboard')}
                   >
-                    <span className={styles.sidebarIcon}>🏠</span>
+                    <i className="bi bi-house-door" style={{ marginRight: '8px' }}></i>
                     <span>Trang chủ</span>
                   </button>
                 </li>
@@ -276,7 +339,7 @@ export default function UserPage() {
                     className={`${styles.sidebarButton} ${activeSection === 'create-report' ? styles.active : ''}`}
                     onClick={() => handleSidebarClick('create-report')}
                   >
-                    <span className={styles.sidebarIcon}>📝</span>
+                    <i className="bi bi-file-earmark-plus" style={{ marginRight: '8px' }}></i>
                     <span>Tạo báo cáo</span>
                   </button>
                 </li>
@@ -285,7 +348,7 @@ export default function UserPage() {
                     className={`${styles.sidebarButton} ${activeSection === 'report-history' ? styles.active : ''}`}
                     onClick={() => handleSidebarClick('report-history')}
                   >
-                    <span className={styles.sidebarIcon}>📊</span>
+                    <i className="bi bi-bar-chart-line" style={{ marginRight: '8px' }}></i>
                     <span>Lịch sử báo cáo</span>
                   </button>
                 </li>
@@ -294,7 +357,7 @@ export default function UserPage() {
                     className={`${styles.sidebarButton} ${activeSection === 'profile' ? styles.active : ''}`}
                     onClick={() => handleSidebarClick('profile')}
                   >
-                    <span className={styles.sidebarIcon}>👤</span>
+                    <i className="bi bi-person-circle" style={{ marginRight: '8px' }}></i>
                     <span>Thông tin cá nhân</span>
                   </button>
                 </li>
@@ -320,7 +383,7 @@ export default function UserPage() {
                   <h3 className={styles.cardTitle}>Chức Năng</h3>
                   <div className={styles.featuresList}>
                     <div className={styles.featureItem}>
-                      <div className={styles.featureIcon}>📝</div>
+                      <div className={styles.featureIcon}><i className="bi bi-file-earmark-plus"></i></div>
                       <div className={styles.featureContent}>
                         <h4>Tạo báo cáo</h4>
                         <p>Tạo báo cáo mới cho công việc của bạn</p>
@@ -334,7 +397,7 @@ export default function UserPage() {
                     </div>
 
                     <div className={styles.featureItem}>
-                      <div className={styles.featureIcon}>📊</div>
+                      <div className={styles.featureIcon}><i className="bi bi-bar-chart-line"></i></div>
                       <div className={styles.featureContent}>
                         <h4>Lịch sử báo cáo</h4>
                         <p>Xem và quản lý các báo cáo đã tạo</p>
@@ -348,7 +411,7 @@ export default function UserPage() {
                     </div>
 
                     <div className={styles.featureItem}>
-                      <div className={styles.featureIcon}>👤</div>
+                      <div className={styles.featureIcon}><i className="bi bi-person-circle"></i></div>
                       <div className={styles.featureContent}>
                         <h4>Thông tin cá nhân</h4>
                         <p>Cập nhật thông tin tài khoản của bạn</p>
@@ -362,7 +425,7 @@ export default function UserPage() {
                     </div>
 
                     <div className={styles.featureItem}>
-                      <div className={styles.featureIcon}>🔒</div>
+                      <div className={styles.featureIcon}><i className="bi bi-shield-lock"></i></div>
                       <div className={styles.featureContent}>
                         <h4>Đổi mật khẩu</h4>
                         <p>Thay đổi mật khẩu để bảo mật tài khoản</p>
@@ -479,7 +542,8 @@ export default function UserPage() {
                       className={styles.editButton}
                       onClick={handleEditProfile}
                     >
-                      ✏️ Sửa thông tin
+                      <i className="bi bi-pencil-square" style={{ marginRight: '4px' }}></i>
+                      Sửa thông tin
                     </button>
                   </div>
                   <div className={styles.infoGrid}>
@@ -525,7 +589,7 @@ export default function UserPage() {
                     className={styles.modalCloseButton}
                     onClick={handleCancelEdit}
                   >
-                    ✕
+                    <i className="bi bi-x-lg"></i>
                   </button>
                 </div>
                 <div className={styles.modalContent}>
@@ -612,14 +676,14 @@ export default function UserPage() {
         <div className={`${styles.toast} ${styles[toastType]} ${showToast ? styles.toastShow : ''}`}>
           <div className={styles.toastContent}>
             <span className={styles.toastIcon}>
-              {toastType === 'success' ? '✅' : '❌'}
+              <i className={`bi ${toastType === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}`}></i>
             </span>
             <span className={styles.toastMessage}>{toastMessage}</span>
             <button 
               className={styles.toastClose}
               onClick={() => setShowToast(false)}
             >
-              ✕
+              <i className="bi bi-x-lg"></i>
             </button>
           </div>
         </div>

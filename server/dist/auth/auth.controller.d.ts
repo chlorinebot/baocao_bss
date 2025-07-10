@@ -3,9 +3,25 @@ export interface LoginDto {
     username: string;
     password: string;
 }
-export interface LoginResponse {
+export interface AuthServiceResponse {
     access_token: string;
     user: {
+        id: number;
+        username: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        role_id: number;
+        birthday?: string;
+        createdAt: string;
+        updatedAt: string;
+    };
+}
+export interface LoginResponse {
+    success: boolean;
+    message?: string;
+    token?: string;
+    user?: {
         id: number;
         username: string;
         email: string;

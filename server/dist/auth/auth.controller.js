@@ -22,17 +22,40 @@ let AuthController = class AuthController {
     }
     async login(loginDto) {
         try {
+            if (!loginDto.username || !loginDto.password) {
+                return {
+                    success: false,
+                    message: 'Tên đăng nhập và mật khẩu là bắt buộc'
+                };
+            }
+            loginDto.username = loginDto.username.trim();
+            loginDto.password = loginDto.password.trim();
             const result = await this.authService.validateUser(loginDto.username, loginDto.password);
             if (!result) {
-                throw new common_1.HttpException('Tên đăng nhập hoặc mật khẩu không đúng', common_1.HttpStatus.UNAUTHORIZED);
+                return {
+                    success: false,
+                    message: 'Tên đăng nhập hoặc mật khẩu không đúng'
+                };
             }
-            return result;
+            return {
+                success: true,
+                message: 'Đăng nhập thành công',
+                token: result.access_token,
+                user: result.user
+            };
         }
         catch (error) {
+            console.error('❌ Lỗi trong auth controller:', error);
             if (error instanceof common_1.HttpException) {
-                throw error;
+                return {
+                    success: false,
+                    message: error.message
+                };
             }
-            throw new common_1.HttpException('Có lỗi xảy ra trong quá trình đăng nhập', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            return {
+                success: false,
+                message: 'Có lỗi xảy ra trong quá trình đăng nhập. Vui lòng thử lại sau.'
+            };
         }
     }
 };

@@ -42,9 +42,10 @@
   justify-content: center;
   align-items: center;
   margin: 0 20px;
+  gap: 20px;
 }
 
-.timeDisplay {
+.userRoleDisplay {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -53,6 +54,40 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.roleLabel {
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.roleValue {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #e74c3c 0%, #3498db 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.timeDisplay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.timeDisplay i {
+  font-size: 1rem;
+  color: #ffffff;
 }
 
 .timeIcon {
@@ -250,15 +285,26 @@
 }
 
 .featureIcon {
-  font-size: 2rem;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #007bff;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 60px;
   height: 60px;
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  background: rgba(0, 123, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.featureIcon:hover {
+  background: rgba(0, 123, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.featureIcon i {
+  font-size: 2rem;
 }
 
 .featureContent {
@@ -396,42 +442,57 @@
   }
 
   .header {
-    padding: 0.75rem 0;
+    padding: 0.8rem 0;
   }
 
   .headerContent {
-    flex-direction: row;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 15px;
     align-items: center;
-    gap: 10px;
     padding: 0 15px;
   }
 
   .logoSection {
-    flex-direction: row;
-    gap: 10px;
-    align-items: center;
-    flex-shrink: 0;
+    order: 1;
   }
 
   .headerCenter {
-    display: none;
+    order: 2;
+    margin: 0;
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .title {
-    font-size: 1.3rem;
-    text-align: left;
+  .userRoleDisplay {
+    padding: 6px 12px;
+    border-radius: 8px;
   }
 
-  .logo {
-    width: 80px;
-    height: auto;
+  .roleLabel {
+    font-size: 0.8rem;
+  }
+
+  .roleValue {
+    font-size: 0.85rem;
+  }
+
+  .timeDisplay {
+    padding: 6px 12px;
+    border-radius: 8px;
+  }
+
+  .timeText {
+    font-size: 0.8rem;
+  }
+
+  .timeZone {
+    font-size: 0.7rem;
   }
 
   .logoutButton {
+    order: 3;
     padding: 8px 16px;
     font-size: 0.8rem;
-    flex-shrink: 0;
   }
 
   /* Mobile Layout */
@@ -634,6 +695,24 @@
     padding: 8px 12px;
     font-size: 0.85rem;
   }
+
+  .shiftDisplay {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    background: rgba(255, 255, 255, 0.95);
+    color: #1a1a1a;
+  }
+
+  .shiftLabel {
+    font-size: 0.8rem;
+    color: #1a1a1a;
+  }
+
+  .shiftTime {
+    font-size: 0.7rem;
+    color: #6b7280;
+  }
 }
 
 @media (max-width: 480px) {
@@ -821,6 +900,24 @@
     flex-direction: column;
     gap: 8px;
   }
+
+  .shiftDisplay {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.95);
+    color: #1a1a1a;
+  }
+
+  .shiftLabel {
+    font-size: 0.75rem;
+    color: #1a1a1a;
+  }
+
+  .shiftTime {
+    font-size: 0.65rem;
+    color: #6b7280;
+  }
 }
 
 /* Main Layout */
@@ -908,8 +1005,10 @@
 }
 
 .sidebarIcon {
-  font-size: 1.3rem;
-  width: 24px;
+  font-size: 1.2rem;
+  margin-right: 8px;
+  color: inherit;
+  width: 20px;
   text-align: center;
 }
 
@@ -1073,23 +1172,26 @@
 }
 
 .editButton {
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  background: #007bff;
   color: white;
   border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 6px;
   cursor: pointer;
+  font-size: 0.9rem;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .editButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(52, 152, 219, 0.3);
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.editButton i {
+  font-size: 0.9rem;
 }
 
 /* Modal Styles */
@@ -1140,21 +1242,23 @@
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #6b7280;
   cursor: pointer;
-  padding: 5px;
-  border-radius: 50%;
+  color: #666;
+  padding: 4px;
+  border-radius: 4px;
   transition: all 0.2s ease;
-  width: 35px;
-  height: 35px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .modalCloseButton:hover {
-  background: #f3f4f6;
-  color: #1a1a1a;
+  background: #f5f5f5;
+  color: #333;
+}
+
+.modalCloseButton i {
+  font-size: 1.2rem;
 }
 
 .modalContent {
@@ -1319,7 +1423,13 @@
 
 .toastIcon {
   font-size: 1.2rem;
-  flex-shrink: 0;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.toastIcon i {
+  font-size: 1.1rem;
 }
 
 .toastMessage {
@@ -1332,19 +1442,23 @@
 .toastClose {
   background: none;
   border: none;
-  color: white;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  opacity: 0.8;
-  flex-shrink: 0;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  padding: 0;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
 }
 
 .toastClose:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.1);
+}
+
+.toastClose i {
+  font-size: 1rem;
 }
 
 /* Toast responsive */
@@ -1388,4 +1502,37 @@
   .toastClose {
     font-size: 1rem;
   }
+}
+
+.shiftDisplay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #1a1a1a;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.shiftDisplay i {
+  font-size: 1rem;
+  color: #e74c3c;
+}
+
+.shiftLabel {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-shadow: none;
+}
+
+.shiftTime {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+  font-family: 'Courier New', monospace;
 } 

@@ -49,7 +49,7 @@ function LoginForm() {
     const fromRegister = searchParams.get('from') === 'register';
     if (fromRegister) {
       setWelcomeMessage('Chào mừng! Tài khoản của bạn đã được tạo thành công. Vui lòng đăng nhập!');
-      // Clear welcome message sau 5 giây
+      // Clear welcome message sau 10 giây
       setTimeout(() => {
         setWelcomeMessage('');
       }, 10000);
@@ -76,25 +76,74 @@ function LoginForm() {
       ...prev,
       [name]: value
     }));
+    
+    // Clear error when user starts typing
+    if (error) {
+      setError('');
+    }
+  };
+
+  const validateForm = () => {
+    if (!formData.username.trim()) {
+      setError('Vui lòng nhập tên đăng nhập');
+      return false;
+    }
+    
+    if (!formData.password.trim()) {
+      setError('Vui lòng nhập mật khẩu');
+      return false;
+    }
+    
+    if (formData.username.trim().length < 3) {
+      setError('Tên đăng nhập phải có ít nhất 3 ký tự');
+      return false;
+    }
+    
+    if (formData.password.trim().length < 6) {
+      setError('Mật khẩu phải có ít nhất 6 ký tự');
+      return false;
+    }
+    
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
 
     try {
+      // Trim whitespace from inputs
+      const trimmedData = {
+        username: formData.username.trim(),
+        password: formData.password.trim()
+      };
+
+      console.log('🚀 Đang gửi request đăng nhập...');
+      
       const response = await fetch('http://localhost:3000/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(trimmedData),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if (response.ok && data.success) {
+      const data = await response.json();
+      console.log('📨 Response nhận được:', data);
+
+      if (data.success) {
+        console.log('✅ Đăng nhập thành công!');
+        
         // Lưu token và thông tin user
         localStorage.setItem('token', data.token);
         localStorage.setItem('userInfo', JSON.stringify(data.user));
@@ -106,10 +155,23 @@ function LoginForm() {
           router.push('/user');
         }
       } else {
+        console.log('❌ Đăng nhập thất bại:', data.message);
         setError(data.message || 'Đăng nhập thất bại');
       }
-    } catch {
-      setError('Lỗi kết nối server. Vui lòng thử lại.');
+    } catch (error) {
+      console.error('❌ Lỗi khi đăng nhập:', error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          setError('Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet và thử lại.');
+        } else if (error.message.includes('HTTP error')) {
+          setError('Server đang gặp sự cố. Vui lòng thử lại sau.');
+        } else {
+          setError('Có lỗi xảy ra. Vui lòng thử lại.');
+        }
+      } else {
+        setError('Lỗi không xác định. Vui lòng thử lại.');
+      }
     } finally {
       setIsLoading(false);
     }

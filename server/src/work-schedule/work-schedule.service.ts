@@ -190,6 +190,96 @@ export class WorkScheduleService {
     });
   }
 
+  // Lấy vai trò phân công của user
+  async getUserRole(userId: number): Promise<{ role: string; scheduleId: number | null }> {
+    try {
+      // Tìm schedule hiện tại đang active
+      const currentSchedule = await this.workScheduleRepository.findOne({
+        where: { active: true },
+        order: { created_date: 'DESC' }
+      });
+
+      if (!currentSchedule) {
+        return { role: 'Chưa được phân công', scheduleId: null };
+      }
+
+      // Kiểm tra user có trong schedule không
+      let role = 'Chưa được phân công';
+      if (currentSchedule.employee_a === userId) {
+        role = 'Nhân viên A';
+      } else if (currentSchedule.employee_b === userId) {
+        role = 'Nhân viên B';
+      } else if (currentSchedule.employee_c === userId) {
+        role = 'Nhân viên C';
+      } else if (currentSchedule.employee_d === userId) {
+        role = 'Nhân viên D';
+      }
+
+      return { role, scheduleId: currentSchedule.id };
+    } catch (error) {
+      console.error('Lỗi khi lấy vai trò user:', error);
+      return { role: 'Chưa được phân công', scheduleId: null };
+    }
+  }
+
+  // Lấy thông tin ca trực hiện tại của user
+  async getUserCurrentShift(userId: number): Promise<{ 
+    role: string; 
+    shift: string | null; 
+    shiftTime: string | null; 
+    scheduleId: number | null 
+  }> {
+    try {
+      // Lấy vai trò của user
+      const userRole = await this.getUserRole(userId);
+      
+      if (userRole.role === 'Chưa được phân công') {
+        return { 
+          role: userRole.role, 
+          shift: null, 
+          shiftTime: null, 
+          scheduleId: null 
+        };
+      }
+
+      // Xác định ca trực dựa trên thời gian hiện tại
+      const now = new Date();
+      const currentHour = now.getHours();
+      
+      let shift = '';
+      let shiftTime = '';
+      
+      if (currentHour >= 6 && currentHour < 14) {
+        // Ca sáng: 6h - 14h
+        shift = 'Ca Sáng';
+        shiftTime = '06:00 - 14:00';
+      } else if (currentHour >= 14 && currentHour < 22) {
+        // Ca chiều: 14h - 22h
+        shift = 'Ca Chiều';
+        shiftTime = '14:00 - 22:00';
+      } else {
+        // Ca đêm: 22h - 6h
+        shift = 'Ca Đêm';
+        shiftTime = '22:00 - 06:00';
+      }
+
+      return {
+        role: userRole.role,
+        shift: shift,
+        shiftTime: shiftTime,
+        scheduleId: userRole.scheduleId
+      };
+    } catch (error) {
+      console.error('Lỗi khi lấy ca trực hiện tại:', error);
+      return { 
+        role: 'Chưa được phân công', 
+        shift: null, 
+        shiftTime: null, 
+        scheduleId: null 
+      };
+    }
+  }
+
   // Thống kê phân công theo tuần/tháng
   async getScheduleStats(startDate: string, endDate: string) {
     const schedules = await this.workScheduleRepository

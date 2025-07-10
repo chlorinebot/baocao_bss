@@ -37,23 +37,6 @@ let WorkScheduleController = class WorkScheduleController {
             };
         }
     }
-    async findOne(id) {
-        try {
-            const schedule = await this.workScheduleService.findOne(id);
-            return {
-                success: true,
-                message: 'Lấy thông tin phân công thành công',
-                data: schedule
-            };
-        }
-        catch (error) {
-            return {
-                success: false,
-                message: 'Lỗi khi lấy thông tin phân công',
-                error: error.message
-            };
-        }
-    }
     async findByDate(date) {
         try {
             const schedules = await this.workScheduleService.findByDate(date);
@@ -84,6 +67,74 @@ let WorkScheduleController = class WorkScheduleController {
             return {
                 success: false,
                 message: 'Lỗi khi lấy danh sách nhân viên',
+                error: error.message
+            };
+        }
+    }
+    async getUserRole(userId) {
+        try {
+            const userRole = await this.workScheduleService.getUserRole(userId);
+            return {
+                success: true,
+                message: 'Lấy vai trò phân công thành công',
+                data: userRole
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                message: 'Lỗi khi lấy vai trò phân công',
+                error: error.message
+            };
+        }
+    }
+    async getUserCurrentShift(userId) {
+        try {
+            const shiftInfo = await this.workScheduleService.getUserCurrentShift(userId);
+            return {
+                success: true,
+                message: 'Lấy thông tin ca trực thành công',
+                data: shiftInfo
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                message: 'Lỗi khi lấy thông tin ca trực',
+                error: error.message
+            };
+        }
+    }
+    async getScheduleStats(startDate, endDate) {
+        try {
+            const stats = await this.workScheduleService.getScheduleStats(startDate, endDate);
+            return {
+                success: true,
+                message: 'Lấy thống kê phân công thành công',
+                data: stats
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                message: 'Lỗi khi lấy thống kê phân công',
+                error: error.message
+            };
+        }
+    }
+    async findOne(id) {
+        try {
+            const schedule = await this.workScheduleService.findOne(id);
+            return {
+                success: true,
+                message: 'Lấy thông tin phân công thành công',
+                data: schedule
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                message: 'Lỗi khi lấy thông tin phân công',
                 error: error.message
             };
         }
@@ -138,23 +189,6 @@ let WorkScheduleController = class WorkScheduleController {
             };
         }
     }
-    async getScheduleStats(startDate, endDate) {
-        try {
-            const stats = await this.workScheduleService.getScheduleStats(startDate, endDate);
-            return {
-                success: true,
-                message: 'Lấy thống kê phân công thành công',
-                data: stats
-            };
-        }
-        catch (error) {
-            return {
-                success: false,
-                message: 'Lỗi khi lấy thống kê phân công',
-                error: error.message
-            };
-        }
-    }
 };
 exports.WorkScheduleController = WorkScheduleController;
 __decorate([
@@ -163,13 +197,6 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], WorkScheduleController.prototype, "findAll", null);
-__decorate([
-    (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], WorkScheduleController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Get)('date/:date'),
     __param(0, (0, common_1.Param)('date')),
@@ -183,6 +210,35 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], WorkScheduleController.prototype, "getAvailableEmployees", null);
+__decorate([
+    (0, common_1.Get)('user/:userId/role'),
+    __param(0, (0, common_1.Param)('userId', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], WorkScheduleController.prototype, "getUserRole", null);
+__decorate([
+    (0, common_1.Get)('user/:userId/current-shift'),
+    __param(0, (0, common_1.Param)('userId', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], WorkScheduleController.prototype, "getUserCurrentShift", null);
+__decorate([
+    (0, common_1.Get)('stats/report'),
+    __param(0, (0, common_1.Query)('startDate')),
+    __param(1, (0, common_1.Query)('endDate')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], WorkScheduleController.prototype, "getScheduleStats", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], WorkScheduleController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
@@ -206,14 +262,6 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], WorkScheduleController.prototype, "remove", null);
-__decorate([
-    (0, common_1.Get)('stats/report'),
-    __param(0, (0, common_1.Query)('startDate')),
-    __param(1, (0, common_1.Query)('endDate')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
-    __metadata("design:returntype", Promise)
-], WorkScheduleController.prototype, "getScheduleStats", null);
 exports.WorkScheduleController = WorkScheduleController = __decorate([
     (0, common_1.Controller)('work-schedule'),
     __metadata("design:paramtypes", [work_schedule_service_1.WorkScheduleService])

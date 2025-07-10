@@ -24,6 +24,16 @@ export declare class WorkScheduleService {
     update(id: number, updateWorkScheduleDto: UpdateWorkScheduleDto): Promise<WorkSchedule>;
     remove(id: number): Promise<void>;
     getAvailableEmployees(): Promise<User[]>;
+    getUserRole(userId: number): Promise<{
+        role: string;
+        scheduleId: number | null;
+    }>;
+    getUserCurrentShift(userId: number): Promise<{
+        role: string;
+        shift: string | null;
+        shiftTime: string | null;
+        scheduleId: number | null;
+    }>;
     getScheduleStats(startDate: string, endDate: string): Promise<{
         totalSchedules: number;
         schedules: WorkSchedule[];
