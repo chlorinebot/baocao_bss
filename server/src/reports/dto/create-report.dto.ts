@@ -1,26 +1,21 @@
-import { IsOptional, IsString, IsArray, IsObject } from 'class-validator';
+import { IsOptional, IsString, IsArray, IsObject, IsBoolean, ValidateNested, ArrayMinSize } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class NodeExporterDto {
-  @IsString()
-  serverName: string;
+  @IsBoolean()
+  cpu: boolean;
 
-  @IsString()
-  ip: string;
+  @IsBoolean()
+  memory: boolean;
 
-  @IsOptional()
-  cpu?: boolean;
+  @IsBoolean()
+  disk: boolean;
 
-  @IsOptional()
-  memory?: boolean;
+  @IsBoolean()
+  network: boolean;
 
-  @IsOptional()
-  disk?: boolean;
-
-  @IsOptional()
-  network?: boolean;
-
-  @IsOptional()
-  netstat?: boolean;
+  @IsBoolean()
+  netstat: boolean;
 
   @IsOptional()
   @IsString()
@@ -28,20 +23,20 @@ export class NodeExporterDto {
 }
 
 export class PatroniDto {
-  @IsOptional()
-  primaryNode?: boolean;
+  @IsBoolean()
+  primaryNode: boolean;
 
-  @IsOptional()
-  walReplayPaused?: boolean;
+  @IsBoolean()
+  walReplayPaused: boolean;
 
-  @IsOptional()
-  replicasReceivedWal?: boolean;
+  @IsBoolean()
+  replicasReceivedWal: boolean;
 
-  @IsOptional()
-  primaryWalLocation?: boolean;
+  @IsBoolean()
+  primaryWalLocation: boolean;
 
-  @IsOptional()
-  replicasReplayedWal?: boolean;
+  @IsBoolean()
+  replicasReplayedWal: boolean;
 
   @IsOptional()
   @IsString()
@@ -49,8 +44,8 @@ export class PatroniDto {
 }
 
 export class TransactionDto {
-  @IsOptional()
-  monitored?: boolean;
+  @IsBoolean()
+  monitored: boolean;
 
   @IsOptional()
   @IsString()
@@ -58,38 +53,38 @@ export class TransactionDto {
 }
 
 export class HeartbeatDto {
-  @IsOptional()
-  heartbeat86?: boolean;
+  @IsBoolean()
+  heartbeat86: boolean;
 
-  @IsOptional()
-  heartbeat87?: boolean;
+  @IsBoolean()
+  heartbeat87: boolean;
 
-  @IsOptional()
-  heartbeat88?: boolean;
+  @IsBoolean()
+  heartbeat88: boolean;
 
   @IsOptional()
   @IsString()
   note?: string;
 }
 
-export class AlertsDto {
-  @IsOptional()
-  warning?: boolean;
+export class AlertDto {
+  @IsBoolean()
+  warning: boolean;
 
-  @IsOptional()
-  critical?: boolean;
+  @IsBoolean()
+  critical: boolean;
 
-  @IsOptional()
-  info?: boolean;
+  @IsBoolean()
+  info: boolean;
 
-  @IsOptional()
-  infoBackup?: boolean;
+  @IsBoolean()
+  infoBackup: boolean;
 
-  @IsOptional()
-  warningDisk?: boolean;
+  @IsBoolean()
+  warningDisk: boolean;
 
-  @IsOptional()
-  other?: boolean;
+  @IsBoolean()
+  other: boolean;
 
   @IsOptional()
   @IsString()
@@ -101,30 +96,32 @@ export class AlertsDto {
 }
 
 export class CreateReportDto {
-  @IsString()
-  date: string;
-
-  @IsOptional()
   @IsArray()
-  nodeExporter?: NodeExporterDto[];
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  @Type(() => NodeExporterDto)
+  nodeExporter: NodeExporterDto[];
 
-  @IsOptional()
   @IsArray()
-  patroni?: PatroniDto[];
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  @Type(() => PatroniDto)
+  patroni: PatroniDto[];
 
-  @IsOptional()
   @IsArray()
-  transactions?: TransactionDto[];
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  @Type(() => TransactionDto)
+  transactions: TransactionDto[];
 
-  @IsOptional()
   @IsArray()
-  heartbeat?: HeartbeatDto[];
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  @Type(() => HeartbeatDto)
+  heartbeat: HeartbeatDto[];
 
-  @IsOptional()
   @IsObject()
-  alerts?: AlertsDto;
-
-  @IsOptional()
-  @IsString()
-  additionalNotes?: string;
+  @ValidateNested()
+  @Type(() => AlertDto)
+  alerts: AlertDto;
 } 

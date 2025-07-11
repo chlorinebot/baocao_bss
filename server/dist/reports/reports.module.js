@@ -11,7 +11,12 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const reports_controller_1 = require("./reports.controller");
 const reports_service_1 = require("./reports.service");
-const report_entity_1 = require("./entities/report.entity");
+const patroni_report_entity_1 = require("../entities/patroni-report.entity");
+const heartbeat_report_entity_1 = require("../entities/heartbeat-report.entity");
+const database_report_entity_1 = require("../entities/database-report.entity");
+const warning_report_entity_1 = require("../entities/warning-report.entity");
+const nemsm_report_entity_1 = require("../entities/nemsm-report.entity");
+const report_entity_1 = require("../entities/report.entity");
 const auth_module_1 = require("../auth/auth.module");
 let ReportsModule = class ReportsModule {
 };
@@ -19,7 +24,14 @@ exports.ReportsModule = ReportsModule;
 exports.ReportsModule = ReportsModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([report_entity_1.Report]),
+            typeorm_1.TypeOrmModule.forFeature([
+                report_entity_1.Report,
+                patroni_report_entity_1.PatroniReport,
+                heartbeat_report_entity_1.HeartbeatReport,
+                database_report_entity_1.DatabaseReport,
+                warning_report_entity_1.WarningReport,
+                nemsm_report_entity_1.NemsmReport,
+            ]),
             auth_module_1.AuthModule,
         ],
         controllers: [reports_controller_1.ReportsController],

@@ -1,53 +1,28 @@
--- Migration: Create Reports Table
--- Tạo bảng báo cáo ca trực
-
+-- Tạo bảng reports trung gian
 CREATE TABLE IF NOT EXISTS reports (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    date DATE NOT NULL,
-    node_exporter JSONB DEFAULT NULL,
-    patroni JSONB DEFAULT NULL,
-    transactions JSONB DEFAULT NULL,
-    heartbeat JSONB DEFAULT NULL,
-    alerts JSONB DEFAULT NULL,
-    additional_notes TEXT DEFAULT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    ID SERIAL PRIMARY KEY,
+    nemsm_report_id INTEGER REFERENCES nemsm_reports(ID),
+    patroni_report_id INTEGER REFERENCES patroni_reports(ID),
+    database_report_id INTEGER REFERENCES database_reports(ID),
+    heartbeat_report_id INTEGER REFERENCES heartbeat_reports(ID),
+    warning_report_id INTEGER REFERENCES warning_reports(ID),
+    by_ID_user INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_nemsm_report FOREIGN KEY (nemsm_report_id) REFERENCES nemsm_reports(ID) ON DELETE SET NULL,
+    CONSTRAINT fk_patroni_report FOREIGN KEY (patroni_report_id) REFERENCES patroni_reports(ID) ON DELETE SET NULL,
+    CONSTRAINT fk_database_report FOREIGN KEY (database_report_id) REFERENCES database_reports(ID) ON DELETE SET NULL,
+    CONSTRAINT fk_heartbeat_report FOREIGN KEY (heartbeat_report_id) REFERENCES heartbeat_reports(ID) ON DELETE SET NULL,
+    CONSTRAINT fk_warning_report FOREIGN KEY (warning_report_id) REFERENCES warning_reports(ID) ON DELETE SET NULL
 );
 
--- Tạo index để tối ưu truy vấn
-CREATE INDEX IF NOT EXISTS idx_reports_user_id ON reports(user_id);
-CREATE INDEX IF NOT EXISTS idx_reports_date ON reports(date);
-CREATE INDEX IF NOT EXISTS idx_reports_user_date ON reports(user_id, date);
+-- Tạo index cho hiệu suất
+CREATE INDEX IF NOT EXISTS idx_reports_user_date ON reports(by_ID_user, created_at);
 
--- Tạo constraint để đảm bảo mỗi user chỉ có một báo cáo mỗi ngày
-ALTER TABLE reports 
-ADD CONSTRAINT unique_user_date UNIQUE (user_id, date);
-
--- Tạo trigger để tự động cập nhật updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_reports_updated_at 
-    BEFORE UPDATE ON reports 
-    FOR EACH ROW 
-    EXECUTE FUNCTION update_updated_at_column();
-
--- Comment các cột
-COMMENT ON TABLE reports IS 'Bảng lưu trữ báo cáo ca trực hàng ngày';
-COMMENT ON COLUMN reports.id IS 'ID báo cáo';
-COMMENT ON COLUMN reports.user_id IS 'ID người dùng tạo báo cáo';
-COMMENT ON COLUMN reports.date IS 'Ngày báo cáo';
-COMMENT ON COLUMN reports.node_exporter IS 'Dữ liệu kiểm tra Node Exporter (JSON)';
-COMMENT ON COLUMN reports.patroni IS 'Dữ liệu kiểm tra PostgreSQL Patroni (JSON)';
-COMMENT ON COLUMN reports.transactions IS 'Dữ liệu kiểm tra Database Transactions (JSON)';
-COMMENT ON COLUMN reports.heartbeat IS 'Dữ liệu kiểm tra PostgreHeartbeat (JSON)';
-COMMENT ON COLUMN reports.alerts IS 'Dữ liệu cảnh báo (JSON)';
-COMMENT ON COLUMN reports.additional_notes IS 'Ghi chú bổ sung';
-COMMENT ON COLUMN reports.created_at IS 'Thời gian tạo';
-COMMENT ON COLUMN reports.updated_at IS 'Thời gian cập nhật cuối'; 
+-- Thêm comment cho bảng
+COMMENT ON TABLE reports IS 'Bảng trung gian liên kết các báo cáo từ 5 bảng riêng biệt';
+COMMENT ON COLUMN reports.nemsm_report_id IS 'ID của báo cáo Node Exporter';
+COMMENT ON COLUMN reports.patroni_report_id IS 'ID của báo cáo Patroni';
+COMMENT ON COLUMN reports.database_report_id IS 'ID của báo cáo Database Transactions';
+COMMENT ON COLUMN reports.heartbeat_report_id IS 'ID của báo cáo Heartbeat';
+COMMENT ON COLUMN reports.warning_report_id IS 'ID của báo cáo Warning';
+COMMENT ON COLUMN reports.by_ID_user IS 'ID của người dùng tạo báo cáo'; 

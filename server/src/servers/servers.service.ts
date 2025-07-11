@@ -12,7 +12,7 @@ export class ServersService {
 
   async findAll(): Promise<Server[]> {
     return await this.serversRepository.find({
-      order: { id: 'ASC' }
-    });
+        order: { id: 'ASC' }
+      });
   }
 } 
