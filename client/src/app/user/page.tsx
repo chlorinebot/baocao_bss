@@ -453,7 +453,10 @@ export default function UserPage() {
             <div className={styles.sectionContent}>
               <h2 className={styles.sectionTitle}>Tạo báo cáo mới</h2>
               <div className={styles.reportButtons}>
-                <button className={styles.reportButton}>
+                <button 
+                  className={styles.reportButton}
+                  onClick={() => router.push('/reports/nemsm')}
+                >
                   <i className="bi bi-server" style={{ marginRight: '8px' }}></i>
                   Node Exporter multiple Server Metrics
                 </button>
