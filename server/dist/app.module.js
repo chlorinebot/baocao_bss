@@ -18,6 +18,7 @@ const roles_module_1 = require("./roles/roles.module");
 const work_schedule_module_1 = require("./work-schedule/work-schedule.module");
 const auth_module_1 = require("./auth/auth.module");
 const servers_module_1 = require("./servers/servers.module");
+const reports_module_1 = require("./reports/reports.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -34,6 +35,7 @@ exports.AppModule = AppModule = __decorate([
             work_schedule_module_1.WorkScheduleModule,
             auth_module_1.AuthModule,
             servers_module_1.ServersModule,
+            reports_module_1.ReportsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

@@ -455,20 +455,29 @@ export default function UserPage() {
               <div className={styles.reportButtons}>
                 <button 
                   className={styles.reportButton}
-                  onClick={() => router.push('/reports/nemsm')}
+                  onClick={() => router.push('/reports#node-exporter')}
                 >
                   <i className="bi bi-server" style={{ marginRight: '8px' }}></i>
                   Node Exporter multiple Server Metrics
                 </button>
-                <button className={styles.reportButton}>
+                <button 
+                  className={styles.reportButton}
+                  onClick={() => router.push('/reports#patroni')}
+                >
                   <i className="bi bi-database-check" style={{ marginRight: '8px' }}></i>
                   PostgreSQL Patroni
                 </button>
-                <button className={styles.reportButton}>
+                <button 
+                  className={styles.reportButton}
+                  onClick={() => router.push('/reports#transactions')}
+                >
                   <i className="bi bi-database" style={{ marginRight: '8px' }}></i>
                   PostgreSQL Database
                 </button>
-                <button className={styles.reportButton}>
+                <button 
+                  className={styles.reportButton}
+                  onClick={() => router.push('/reports#heartbeat')}
+                >
                   <i className="bi bi-discord" style={{ marginRight: '8px' }}></i>
                   Sử dụng Discord giám sát
                 </button>
