@@ -1,94 +1,110 @@
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
   const router = useRouter();
-  const pathname = usePathname();
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [username, setUsername] = useState('');
 
-  const isActive = (path: string) => {
-    return pathname === path;
+  useEffect(() => {
+    // Cập nhật thời gian mỗi giây
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    // Lấy username từ localStorage
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    router.push('/login');
   };
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
+  // Format thời gian
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  };
 
-      if (response.ok) {
-        router.push('/login');
-      }
-    } catch (error) {
-      console.error('Lỗi khi đăng xuất:', error);
+  // Format ngày tháng
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // Xác định ca trực dựa vào giờ hiện tại
+  const getShift = () => {
+    const hour = currentTime.getHours();
+    if (hour >= 14 && hour < 22) {
+      return 'Ca Chiều (14:00 - 22:00)';
+    } else if (hour >= 6 && hour < 14) {
+      return 'Ca Sáng (06:00 - 14:00)';
+    } else {
+      return 'Ca Đêm (22:00 - 06:00)';
     }
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top">
-      <div className="container">
-        <Link href="/dashboard" className="navbar-brand d-flex align-items-center">
-          <img
-            src="/bss-logo.png"
-            alt="BSS Logo"
-            className="me-2"
-            style={{ height: '30px' }}
-          />
-          <span className="fw-bold text-primary">BSS DCM</span>
+    <nav className="navbar navbar-expand-lg bg-white shadow-sm">
+      <div className="container-fluid px-4">
+        {/* Logo */}
+        <Link href="/dashboard" className="navbar-brand">
+          <div className="d-flex align-items-center">
+            <Image
+              src="/img/logo_telsoft.jpg"
+              alt="TELSOFT Logo"
+              width={200}
+              height={40}
+              style={{ objectFit: 'contain' }}
+              priority
+            />
+          </div>
         </Link>
 
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarContent"
-          aria-controls="navbarContent"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span className="navbar-toggler-icon"></span>
-        </button>
+        {/* Thông tin ca trực và thời gian */}
+        <div className="d-flex align-items-center flex-grow-1 justify-content-center gap-4">
+          <div className="d-flex align-items-center">
+            <span className="text-muted me-2">Vai trò:</span>
+            <span className="fw-medium">Nhân viên A</span>
+          </div>
 
-        <div className="collapse navbar-collapse" id="navbarContent">
-          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-            <li className="nav-item">
-              <Link
-                href="/dashboard"
-                className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}
-              >
-                <i className="bi bi-speedometer2 me-1"></i>
-                Dashboard
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link
-                href="/reports"
-                className={`nav-link ${pathname.startsWith('/reports') ? 'active' : ''}`}
-              >
-                <i className="bi bi-file-text me-1"></i>
-                Báo cáo
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link
-                href="/users"
-                className={`nav-link ${pathname.startsWith('/users') ? 'active' : ''}`}
-              >
-                <i className="bi bi-people me-1"></i>
-                Người dùng
-              </Link>
-            </li>
-          </ul>
+          <div className="d-flex align-items-center">
+            <i className="bi bi-clock me-2 text-primary"></i>
+            <span className="fw-medium">{getShift()}</span>
+          </div>
 
-          <button
-            onClick={handleLogout}
-            className="btn btn-outline-danger"
-          >
-            <i className="bi bi-box-arrow-right me-2"></i>
-            Đăng xuất
-          </button>
+          <div className="d-flex align-items-center">
+            <span className="fw-medium">
+              {formatTime(currentTime)} {formatDate(currentTime)} (GMT+7)
+            </span>
+          </div>
         </div>
+
+        {/* Nút đăng xuất */}
+        <button
+          onClick={handleLogout}
+          className="btn btn-danger ms-3"
+        >
+          Đăng Xuất
+        </button>
       </div>
     </nav>
   );

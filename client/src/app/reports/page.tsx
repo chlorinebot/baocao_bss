@@ -103,70 +103,217 @@ export default function ReportForm() {
     setLoading(true);
 
     try {
+      // Tạo và validate dữ liệu báo cáo
       const reportData = {
         date: today,
-        nodeExporter: servers.map((server, index) => ({
+        nodeExporter: servers.map(server => ({
+          serverId: server.id,
           serverName: server.server_name,
           ip: server.ip,
-          cpu: checkboxStates[`server_${index}_cpu`] || false,
-          memory: checkboxStates[`server_${index}_memory`] || false,
-          disk: checkboxStates[`server_${index}_disk`] || false,
-          network: checkboxStates[`server_${index}_network`] || false,
-          netstat: checkboxStates[`server_${index}_netstat`] || false,
-          note: notes[`server_${index}_note`] || ''
+          metrics: {
+            cpu: checkboxStates[`server_${server.id}_cpu`] || false,
+            memory: checkboxStates[`server_${server.id}_memory`] || false,
+            disk: checkboxStates[`server_${server.id}_disk`] || false,
+            network: checkboxStates[`server_${server.id}_network`] || false,
+            netstat: checkboxStates[`server_${server.id}_netstat`] || false,
+          },
+          note: notes[`server_${server.id}_note`] || ''
         })),
         patroni: Array.from({ length: 16 }, (_, index) => ({
-          primaryNode: checkboxStates[`patroni_${index}_primary`] || false,
-          walReplayPaused: checkboxStates[`patroni_${index}_wal_replay`] || false,
-          replicasReceivedWal: checkboxStates[`patroni_${index}_replicas_received`] || false,
-          primaryWalLocation: checkboxStates[`patroni_${index}_primary_wal`] || false,
-          replicasReplayedWal: checkboxStates[`patroni_${index}_replicas_replayed`] || false,
+          index: index + 1,
+          metrics: {
+            primaryNode: checkboxStates[`patroni_${index}_primary`] || false,
+            walReplayPaused: checkboxStates[`patroni_${index}_wal_replay`] || false,
+            replicasReceivedWal: checkboxStates[`patroni_${index}_replicas_received`] || false,
+            primaryWalLocation: checkboxStates[`patroni_${index}_primary_wal`] || false,
+            replicasReplayedWal: checkboxStates[`patroni_${index}_replicas_replayed`] || false,
+          },
           note: notes[`patroni_${index}_note`] || ''
-        })),
-        transactions: Array.from({ length: 10 }, (_, index) => ({
+        })).filter(item => 
+          item.metrics.primaryNode || 
+          item.metrics.walReplayPaused || 
+          item.metrics.replicasReceivedWal || 
+          item.metrics.primaryWalLocation || 
+          item.metrics.replicasReplayedWal || 
+          item.note
+        ),
+        transactions: Array.from({ length: 16 }, (_, index) => ({
+          index: index + 1,
           monitored: checkboxStates[`transaction_${index}_monitored`] || false,
           note: notes[`transaction_${index}_note`] || ''
-        })),
+        })).filter(item => item.monitored || item.note),
         heartbeat: Array.from({ length: 4 }, (_, index) => ({
-          heartbeat86: checkboxStates[`heartbeat_${index}_86`] || false,
-          heartbeat87: checkboxStates[`heartbeat_${index}_87`] || false,
-          heartbeat88: checkboxStates[`heartbeat_${index}_88`] || false,
+          index: index + 1,
+          metrics: {
+            heartbeat86: checkboxStates[`heartbeat_${index}_86`] || false,
+            heartbeat87: checkboxStates[`heartbeat_${index}_87`] || false,
+            heartbeat88: checkboxStates[`heartbeat_${index}_88`] || false,
+          },
           note: notes[`heartbeat_${index}_note`] || ''
-        })),
+        })).filter(item => 
+          item.metrics.heartbeat86 || 
+          item.metrics.heartbeat87 || 
+          item.metrics.heartbeat88 || 
+          item.note
+        ),
         alerts: {
-          warning: checkboxStates['alert_warning'] || false,
-          critical: checkboxStates['alert_critical'] || false,
-          info: checkboxStates['alert_info'] || false,
-          infoBackup: checkboxStates['alert_info_backup'] || false,
-          warningDisk: checkboxStates['alert_warning_disk'] || false,
-          other: checkboxStates['alert_other'] || false,
-          note1: notes['alert_note_1'] || '',
-          note2: notes['alert_note_2'] || ''
+          types: {
+            warning: checkboxStates['alert_warning'] || false,
+            critical: checkboxStates['alert_critical'] || false,
+            info: checkboxStates['alert_info'] || false,
+            infoBackup: checkboxStates['alert_info_backup'] || false,
+            warningDisk: checkboxStates['alert_warning_disk'] || false,
+            other: checkboxStates['alert_other'] || false,
+          },
+          notes: {
+            note1: notes['alert_note_1'] || '',
+            note2: notes['alert_note_2'] || ''
+          }
         },
-        additionalNotes
+        additionalNotes: additionalNotes || ''
       };
 
-      // Gửi data đến API (cần implement API endpoint)
-      const response = await fetch('/api/reports', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reportData),
-      });
+      // Log chi tiết từng phần của dữ liệu
+      console.log('Chi tiết Node Exporter:', reportData.nodeExporter);
+      console.log('Chi tiết Patroni:', reportData.patroni);
+      console.log('Chi tiết Transactions:', reportData.transactions);
+      console.log('Chi tiết Heartbeat:', reportData.heartbeat);
+      console.log('Chi tiết Alerts:', reportData.alerts);
 
-      if (response.ok) {
+      // Kiểm tra dữ liệu
+      if (!reportData.nodeExporter.some(item => 
+        Object.values(item.metrics).some(value => value === true)
+      )) {
+        throw new Error('Vui lòng kiểm tra ít nhất một mục trong Node Exporter');
+      }
+
+      // Kiểm tra token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại!');
+        router.push('/login');
+        return;
+      }
+
+      try {
+        console.log('Bắt đầu gửi request với token:', token.substring(0, 10) + '...');
+        
+        const response = await fetch('/api/reports', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(reportData),
+          credentials: 'include',
+        });
+
+        console.log('Status code từ server:', response.status);
+        console.log('Headers từ server:', Object.fromEntries(response.headers.entries()));
+
+        let responseData;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          responseData = await response.json();
+          console.log('Response data (JSON):', responseData);
+        } else {
+          responseData = await response.text();
+          console.log('Response data (Text):', responseData);
+        }
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            alert('Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại!');
+            router.push('/login');
+            return;
+          } else if (response.status === 500) {
+            throw new Error(`Lỗi máy chủ: ${typeof responseData === 'string' ? responseData : JSON.stringify(responseData)}`);
+          } else {
+            throw new Error(
+              typeof responseData === 'string' 
+                ? responseData 
+                : responseData.error || responseData.message || 'Gửi báo cáo thất bại'
+            );
+          }
+        }
+
         alert('Đã gửi báo cáo thành công!');
         router.push('/reports/history');
-      } else {
-        throw new Error('Gửi báo cáo thất bại');
+      } catch (error) {
+        console.error('Chi tiết lỗi khi gửi request:', error);
+        alert(error instanceof Error ? error.message : 'Có lỗi xảy ra khi gửi báo cáo!');
       }
     } catch (error) {
-      console.error('Error submitting report:', error);
-      alert('Có lỗi xảy ra khi gửi báo cáo!');
+      console.error('Lỗi khi xử lý dữ liệu:', error);
+      alert(error instanceof Error ? error.message : 'Có lỗi xảy ra khi xử lý dữ liệu báo cáo!');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Thêm các hàm xử lý chọn tất cả
+  const handleSelectAllNodeExporter = (checked: boolean) => {
+    const newStates = { ...checkboxStates };
+    servers.forEach(server => {
+      newStates[`server_${server.id}_cpu`] = checked;
+      newStates[`server_${server.id}_memory`] = checked;
+      newStates[`server_${server.id}_disk`] = checked;
+      newStates[`server_${server.id}_network`] = checked;
+      newStates[`server_${server.id}_netstat`] = checked;
+    });
+    setCheckboxStates(newStates);
+  };
+
+  const handleSelectAllPatroni = (checked: boolean) => {
+    const newStates = { ...checkboxStates };
+    Array.from({ length: 16 }).forEach((_, index) => {
+      newStates[`patroni_${index}_primary`] = checked;
+      newStates[`patroni_${index}_wal_replay`] = checked;
+      newStates[`patroni_${index}_replicas_received`] = checked;
+      newStates[`patroni_${index}_primary_wal`] = checked;
+      newStates[`patroni_${index}_replicas_replayed`] = checked;
+    });
+    setCheckboxStates(newStates);
+  };
+
+  const handleSelectAllTransactions = (checked: boolean) => {
+    const newStates = { ...checkboxStates };
+    Array.from({ length: 16 }).forEach((_, index) => {
+      newStates[`transaction_${index}_monitored`] = checked;
+    });
+    setCheckboxStates(newStates);
+  };
+
+  const handleSelectAllHeartbeat = (checked: boolean) => {
+    const newStates = { ...checkboxStates };
+    Array.from({ length: 4 }).forEach((_, index) => {
+      newStates[`heartbeat_${index}_86`] = checked;
+      newStates[`heartbeat_${index}_87`] = checked;
+      newStates[`heartbeat_${index}_88`] = checked;
+    });
+    setCheckboxStates(newStates);
+  };
+
+  // Thêm hàm xử lý chọn tất cả cho một hàng Patroni
+  const handleSelectPatroniRow = (index: number, checked: boolean) => {
+    const newStates = { ...checkboxStates };
+    newStates[`patroni_${index}_primary`] = checked;
+    newStates[`patroni_${index}_wal_replay`] = checked;
+    newStates[`patroni_${index}_replicas_received`] = checked;
+    newStates[`patroni_${index}_primary_wal`] = checked;
+    newStates[`patroni_${index}_replicas_replayed`] = checked;
+    setCheckboxStates(newStates);
+  };
+
+  // Kiểm tra trạng thái của một hàng Patroni
+  const isPatroniRowSelected = (index: number) => {
+    return (
+      checkboxStates[`patroni_${index}_primary`] &&
+      checkboxStates[`patroni_${index}_wal_replay`] &&
+      checkboxStates[`patroni_${index}_replicas_received`] &&
+      checkboxStates[`patroni_${index}_primary_wal`] &&
+      checkboxStates[`patroni_${index}_replicas_replayed`]
+    );
   };
 
   const sections = [
@@ -196,8 +343,8 @@ export default function ReportForm() {
 
         <div className="row g-4">
           {/* Navigation Sidebar */}
-          <div className="col-md-3">
-            <div className="card shadow-sm sidebar-nav report-sidebar-fixed" style={{ width: '260px' }}>
+          <div className="col-md-2 position-fixed start-0" style={{ width: '280px' }}>
+            <div className="card shadow-sm sidebar-nav">
               <div className="card-body p-3">
                 <nav className="nav flex-column nav-pills">
                   {sections.map((section) => (
@@ -221,15 +368,26 @@ export default function ReportForm() {
           </div>
 
           {/* Main Form Content */}
-          <div className="col-md-9">
+          <div className="col-md-10 mx-auto" style={{ marginLeft: '250px', marginRight: '250px' }}>
             <form onSubmit={handleSubmit} className="d-flex flex-column gap-4">
               {/* Node Exporter Section */}
               <div id="node-exporter" className="card shadow-sm report-card">
                 <div className="card-body">
-                  <h2 className="card-title h5 mb-4">
-                    <i className="bi bi-hdd-network me-2"></i>
-                    Node Exporter Multiple Server Metrics
-                  </h2>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h2 className="card-title h5 mb-0">
+                      <i className="bi bi-hdd-network me-2"></i>
+                      Node Exporter Multiple Server Metrics
+                    </h2>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={(e) => handleSelectAllNodeExporter((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
+                    >
+                      {Object.entries(checkboxStates).some(([key, value]) => 
+                        key.startsWith('server_') && value
+                      ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
+                  </div>
                   <div className="table-responsive">
                     <table className="table table-bordered table-hover align-middle">
                       <thead className="table-light">
@@ -271,8 +429,8 @@ export default function ReportForm() {
                                 <div className="form-check d-flex justify-content-center">
                                   <input
                                     type="checkbox"
-                                    checked={checkboxStates[`server_${index}_cpu`] || false}
-                                    onChange={() => handleCheckboxChange(`server_${index}_cpu`)}
+                                    checked={checkboxStates[`server_${server.id}_cpu`] || false}
+                                    onChange={() => handleCheckboxChange(`server_${server.id}_cpu`)}
                                     className="form-check-input"
                                   />
                                 </div>
@@ -281,8 +439,8 @@ export default function ReportForm() {
                                 <div className="form-check d-flex justify-content-center">
                                   <input
                                     type="checkbox"
-                                    checked={checkboxStates[`server_${index}_memory`] || false}
-                                    onChange={() => handleCheckboxChange(`server_${index}_memory`)}
+                                    checked={checkboxStates[`server_${server.id}_memory`] || false}
+                                    onChange={() => handleCheckboxChange(`server_${server.id}_memory`)}
                                     className="form-check-input"
                                   />
                                 </div>
@@ -291,8 +449,8 @@ export default function ReportForm() {
                                 <div className="form-check d-flex justify-content-center">
                                   <input
                                     type="checkbox"
-                                    checked={checkboxStates[`server_${index}_disk`] || false}
-                                    onChange={() => handleCheckboxChange(`server_${index}_disk`)}
+                                    checked={checkboxStates[`server_${server.id}_disk`] || false}
+                                    onChange={() => handleCheckboxChange(`server_${server.id}_disk`)}
                                     className="form-check-input"
                                   />
                                 </div>
@@ -301,8 +459,8 @@ export default function ReportForm() {
                                 <div className="form-check d-flex justify-content-center">
                                   <input
                                     type="checkbox"
-                                    checked={checkboxStates[`server_${index}_network`] || false}
-                                    onChange={() => handleCheckboxChange(`server_${index}_network`)}
+                                    checked={checkboxStates[`server_${server.id}_network`] || false}
+                                    onChange={() => handleCheckboxChange(`server_${server.id}_network`)}
                                     className="form-check-input"
                                   />
                                 </div>
@@ -311,8 +469,8 @@ export default function ReportForm() {
                                 <div className="form-check d-flex justify-content-center">
                                   <input
                                     type="checkbox"
-                                    checked={checkboxStates[`server_${index}_netstat`] || false}
-                                    onChange={() => handleCheckboxChange(`server_${index}_netstat`)}
+                                    checked={checkboxStates[`server_${server.id}_netstat`] || false}
+                                    onChange={() => handleCheckboxChange(`server_${server.id}_netstat`)}
                                     className="form-check-input"
                                   />
                                 </div>
@@ -320,8 +478,8 @@ export default function ReportForm() {
                               <td>
                                 <textarea
                                   rows={1}
-                                  value={notes[`server_${index}_note`] || ''}
-                                  onChange={(e) => handleNoteChange(`server_${index}_note`, e.target.value)}
+                                  value={notes[`server_${server.id}_note`] || ''}
+                                  onChange={(e) => handleNoteChange(`server_${server.id}_note`, e.target.value)}
                                   placeholder="Ghi chú..."
                                   className="form-control form-control-sm"
                                 />
@@ -338,15 +496,27 @@ export default function ReportForm() {
               {/* Patroni Section */}
               <div id="patroni" className="card shadow-sm report-card">
                 <div className="card-body">
-                  <h2 className="card-title h5 mb-4">
-                    <i className="bi bi-database-check me-2"></i>
-                    PostgreSQL Patroni
-                  </h2>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h2 className="card-title h5 mb-0">
+                      <i className="bi bi-database-check me-2"></i>
+                      PostgreSQL Patroni
+                    </h2>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={(e) => handleSelectAllPatroni((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
+                    >
+                      {Object.entries(checkboxStates).some(([key, value]) => 
+                        key.startsWith('patroni_') && value
+                      ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
+                  </div>
                   <div className="table-responsive">
                     <table className="table table-bordered table-hover align-middle">
                       <thead className="table-light">
                         <tr>
                           <th scope="col" className="text-center">STT</th>
+                          <th scope="col" className="text-center">Chọn hàng</th>
                           <th scope="col" className="text-center">Primary Node</th>
                           <th scope="col" className="text-center">WAL Replay Paused</th>
                           <th scope="col" className="text-center">Replicas Received WAL</th>
@@ -359,6 +529,15 @@ export default function ReportForm() {
                         {Array.from({ length: 16 }, (_, index) => (
                           <tr key={index}>
                             <td className="text-center">{index + 1}</td>
+                            <td className="text-center">
+                              <button
+                                type="button"
+                                className="btn btn-outline-secondary btn-sm"
+                                onClick={() => handleSelectPatroniRow(index, !isPatroniRowSelected(index))}
+                              >
+                                {isPatroniRowSelected(index) ? 'Bỏ chọn' : 'Chọn'}
+                              </button>
+                            </td>
                             <td className="text-center">
                               <div className="form-check d-flex justify-content-center">
                                 <input
@@ -429,10 +608,21 @@ export default function ReportForm() {
               {/* Transactions Section */}
               <div id="transactions" className="card shadow-sm report-card">
                 <div className="card-body">
-                  <h2 className="card-title h5 mb-4">
-                    <i className="bi bi-arrow-left-right me-2"></i>
-                    PostgreSQL Database Transactions
-                  </h2>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h2 className="card-title h5 mb-0">
+                      <i className="bi bi-arrow-left-right me-2"></i>
+                      Database Transactions
+                    </h2>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={(e) => handleSelectAllTransactions((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
+                    >
+                      {Object.entries(checkboxStates).some(([key, value]) => 
+                        key.startsWith('transaction_') && value
+                      ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
+                  </div>
                   <div className="table-responsive">
                     <table className="table table-bordered table-hover align-middle">
                       <thead className="table-light">
@@ -443,7 +633,7 @@ export default function ReportForm() {
                         </tr>
                       </thead>
                       <tbody>
-                        {Array.from({ length: 10 }, (_, index) => (
+                        {Array.from({ length: 16 }, (_, index) => (
                           <tr key={index}>
                             <td className="text-center">{index + 1}</td>
                             <td className="text-center">
@@ -476,10 +666,21 @@ export default function ReportForm() {
               {/* Heartbeat Section */}
               <div id="heartbeat" className="card shadow-sm report-card">
                 <div className="card-body">
-                  <h2 className="card-title h5 mb-4">
-                    <i className="bi bi-heart-pulse me-2"></i>
-                    PostgreHeartbeat
-                  </h2>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h2 className="card-title h5 mb-0">
+                      <i className="bi bi-heart-pulse me-2"></i>
+                      PostgreHeartbeat
+                    </h2>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={(e) => handleSelectAllHeartbeat((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
+                    >
+                      {Object.entries(checkboxStates).some(([key, value]) => 
+                        key.startsWith('heartbeat_') && value
+                      ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
+                  </div>
                   <div className="table-responsive">
                     <table className="table table-bordered table-hover align-middle">
                       <thead className="table-light">
@@ -668,31 +869,34 @@ export default function ReportForm() {
                   </div>
                 </div>
               </div>
+            </form>
+          </div>
 
-              {/* Additional Notes */}
-              <div className="card shadow-sm report-card">
-                <div className="card-body">
-                  <h2 className="card-title h5 mb-4">
+          {/* Right Sidebar */}
+          <div className="col-md-2 position-fixed end-0" style={{ width: '280px' }}>
+            <div className="card shadow-sm sidebar-nav">
+              <div className="card-body p-3">
+                {/* Additional Notes */}
+                <div className="mb-4">
+                  <h2 className="h6 mb-3">
                     <i className="bi bi-pencil-square me-2"></i>
                     Ghi chú bổ sung
                   </h2>
                   <textarea
-                    rows={4}
+                    rows={8}
                     value={additionalNotes}
                     onChange={(e) => setAdditionalNotes(e.target.value)}
                     placeholder="Nhập ghi chú bổ sung hoặc thông tin khác..."
-                    className="form-control"
+                    className="form-control form-control-sm"
                   />
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="card shadow-sm">
-                <div className="card-body d-flex justify-content-between">
+                {/* Action Buttons */}
+                <div className="d-flex flex-column gap-2">
                   <button
                     type="button"
                     onClick={() => router.push('/dashboard')}
-                    className="btn btn-secondary"
+                    className="btn btn-secondary btn-sm w-100"
                   >
                     <i className="bi bi-arrow-left me-2"></i>
                     Quay lại
@@ -700,7 +904,8 @@ export default function ReportForm() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-sm w-100"
+                    onClick={handleSubmit}
                   >
                     {loading ? (
                       <>
@@ -716,7 +921,7 @@ export default function ReportForm() {
                   </button>
                 </div>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>
