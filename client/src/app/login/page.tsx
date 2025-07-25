@@ -130,8 +130,11 @@ function LoginForm() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Origin': window.location.origin, // Thêm header origin
         },
         body: JSON.stringify(trimmedData),
+        credentials: 'include', // Thêm credentials
+        signal: AbortSignal.timeout(10000), // Timeout 10 giây
       });
 
       if (!response.ok) {
@@ -148,6 +151,10 @@ function LoginForm() {
         localStorage.setItem('token', data.token);
         localStorage.setItem('userInfo', JSON.stringify(data.user));
         
+        // Lưu token vào cookie để sử dụng cho API calls
+        document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Strict`;
+        console.log('🍪 Đã lưu token vào cookie');
+        
         // Chuyển hướng dựa trên role
         if (data.user.role_id === 1) {
           router.push('/dashboard');
@@ -162,7 +169,9 @@ function LoginForm() {
       console.error('❌ Lỗi khi đăng nhập:', error);
       
       if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch')) {
+        if (error.name === 'AbortError') {
+          setError('Kết nối quá hạn. Vui lòng kiểm tra kết nối internet.');
+        } else if (error.message.includes('Failed to fetch')) {
           setError('Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet và thử lại.');
         } else if (error.message.includes('HTTP error')) {
           setError('Server đang gặp sự cố. Vui lòng thử lại sau.');

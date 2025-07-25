@@ -1,34 +1,46 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Report } from '../reports/report.entity';
+import { Server } from './server.entity';
 
 @Entity('nemsm_reports')
 export class NemsmReport {
-  @PrimaryGeneratedColumn()
-  ID: number;
+  @PrimaryGeneratedColumn({
+    name: 'id',
+    type: 'int',
+    unsigned: true,
+  })
+  id: number;
 
-  @Column({ name: 'ID_NEmSM', type: 'int', nullable: true })
-  ID_NEmSM: number;
+  @Column({ name: 'id_report_id', type: 'int', nullable: false })
+  id_report_id: number;
 
-  @Column({ name: 'CPU', type: 'text', nullable: true })
-  CPU: string;
+  @Column({ name: 'id_nemsm', type: 'int', nullable: false })
+  id_nemsm: number;
 
-  @Column({ name: 'Memory', type: 'text', nullable: true })
-  Memory: string;
+  @Column({ name: 'cpu', type: 'varchar', length: 10, nullable: true, default: 'false' })
+  cpu: string;
 
-  @Column({ name: 'Disk_space_user', type: 'text', nullable: true })
-  Disk_space_user: string;
+  @Column({ name: 'memory', type: 'varchar', length: 10, nullable: true, default: 'false' })
+  memory: string;
 
-  @Column({ name: 'Network_traffic', type: 'text', nullable: true })
-  Network_traffic: string;
+  @Column({ name: 'disk_space_used', type: 'varchar', length: 10, nullable: true, default: 'false' })
+  disk_space_used: string;
 
-  @Column({ name: 'Netstat', type: 'text', nullable: true })
-  Netstat: string;
+  @Column({ name: 'network_traffic', type: 'varchar', length: 10, nullable: true, default: 'false' })
+  network_traffic: string;
 
-  @Column({ name: 'Note', type: 'text', nullable: true })
-  Note: string;
+  @Column({ name: 'netstat', type: 'varchar', length: 10, nullable: true, default: 'false' })
+  netstat: string;
 
-  @CreateDateColumn({ name: 'created_at' })
-  created_at: Date;
+  @Column({ name: 'notes', type: 'text', nullable: true })
+  notes: string;
 
-  @Column({ name: 'by_ID_user', type: 'int', nullable: true })
-  by_ID_user: number;
+  // Relationships
+  @ManyToOne(() => Report)
+  @JoinColumn({ name: 'id_report_id' })
+  report: Report;
+
+  @ManyToOne(() => Server)
+  @JoinColumn({ name: 'id_nemsm' })
+  server: Server;
 } 

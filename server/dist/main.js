@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@nestjs/core");
 const app_module_1 = require("./app.module");
 const typeorm_1 = require("typeorm");
+const common_1 = require("@nestjs/common");
 async function displayLogo() {
     console.clear();
     const red = '\x1b[31m';
@@ -70,31 +71,40 @@ async function bootstrap() {
     await displayLogo();
     console.log('🚀 Đang khởi động server...');
     await waitForDatabase();
-    try {
-        const app = await core_1.NestFactory.create(app_module_1.AppModule, {
-            logger: false,
-        });
-        app.enableCors({
-            origin: true,
-            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
-            allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-            credentials: true,
-            preflightContinue: false,
-            optionsSuccessStatus: 204
-        });
-        const port = process.env.PORT || 3000;
-        await app.listen(port);
-        console.log('✅ Server khởi động thành công!');
-        console.log(`🌐 Server đang chạy tại: http://localhost:${port}`);
-        console.log(`🏥 Health check: http://localhost:${port}/health`);
-        console.log(`👥 Users API: http://localhost:${port}/users`);
-        console.log(`💼 Work Assignment API: http://localhost:${port}/work-schedule`);
-        console.log('📝 Server sẵn sàng xử lý requests...');
-    }
-    catch (error) {
-        console.error('❌ Lỗi khởi động server:', error.message);
-        process.exit(1);
-    }
+    const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    app.use((req, res, next) => {
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+        console.log('Headers:', req.headers);
+        if (['POST', 'PUT'].includes(req.method)) {
+            let body = '';
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
+            req.on('end', () => {
+                console.log('Body:', body);
+            });
+        }
+        next();
+    });
+    app.enableCors({
+        origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:9999', 'login:9999'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
+        credentials: true,
+    });
+    app.useGlobalPipes(new common_1.ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+    }));
+    const port = process.env.PORT || 3000;
+    await app.listen(port);
+    console.log('✅ Server khởi động thành công!');
+    console.log(`🌐 Server đang chạy tại: http://localhost:${port}`);
+    console.log(`�� Health check: http://localhost:${port}/health`);
+    console.log(`👥 Users API: http://localhost:${port}/users`);
+    console.log(`💼 Work Assignment API: http://localhost:${port}/work-schedule`);
+    console.log('📝 Server sẵn sàng xử lý requests...');
 }
 bootstrap().catch((error) => {
     console.error('💥 Lỗi nghiêm trọng:', error);

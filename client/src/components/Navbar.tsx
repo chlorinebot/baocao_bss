@@ -28,6 +28,12 @@ export default function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('userInfo');
+    
+    // Xóa cookie token
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+    console.log('🍪 Đã xóa token cookie khi đăng xuất');
+    
     router.push('/login');
   };
 

@@ -53,17 +53,13 @@ export default function UserPage() {
     // Cập nhật thời gian mỗi giây
     const updateTime = () => {
       const now = new Date();
-      // Sử dụng trực tiếp thời gian hiện tại của hệ thống
-      const timeString = now.toLocaleString('vi-VN', {
-        year: 'numeric',
-        month: '2-digit',
+      // Format ngày
+      const dateString = now.toLocaleDateString('vi-VN', {
         day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
+        month: '2-digit',
+        year: 'numeric'
       });
-      setCurrentTime(timeString);
+      setCurrentTime(dateString);
     };
 
     updateTime(); // Cập nhật ngay lập tức
@@ -96,6 +92,12 @@ export default function UserPage() {
         // Role không hợp lệ
         router.push('/login');
         return;
+      }
+
+      // Đảm bảo token được lưu trong cookie
+      if (token) {
+        document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Strict`;
+        console.log('🍪 Đã cập nhật token trong cookie từ trang user');
       }
 
       setUserInfo(userInfo);
@@ -303,14 +305,14 @@ export default function UserPage() {
             {userShift && userShift.shift && (
               <div className={styles.shiftDisplay}>
                 <i className="bi bi-clock-history" style={{ marginRight: '8px' }}></i>
-                <span className={styles.shiftLabel}>{userShift.shift}</span>
-                <span className={styles.shiftTime}>({userShift.shiftTime})</span>
+                <span className={styles.shiftLabel}>Ca Sáng</span>
+                <span className={styles.shiftTime}>(06:00 - 14:00)</span>
               </div>
             )}
-            <div className={styles.timeDisplay}>
-              <i className="bi bi-clock" style={{ marginRight: '8px' }}></i>
-              <span className={styles.timeText}>{currentTime}</span>
-              <span className={styles.timeZone}>(GMT+7)</span>
+            <div className={styles.shiftDisplay}>
+              <i className="bi bi-calendar-date" style={{ marginRight: '8px' }}></i>
+              <span className={styles.shiftLabel}>Ngày</span>
+              <span className={styles.shiftTime}>({currentTime} {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })})</span>
             </div>
           </div>
           <button onClick={handleLogout} className={styles.logoutButton}>
@@ -438,7 +440,7 @@ export default function UserPage() {
                 <div className={styles.helpCard}>
                   <h3 className={styles.cardTitle}>Cần hỗ trợ?</h3>
                   <p>
-                    Nếu bạn gặp khó khăn hoặc cần hỗ trợ, vui lòng liên hệ với quản trị viên.
+                    Nếu bạn gặp khó khăn hoặc cần hỗ trợ, vui lòng sử dụng tài liệu hướng dẫn sử dụng hoặc liên hệ với quản trị viên.
                   </p>
                   <div className={styles.helpActions}>
                     <button className={styles.helpButton}>Liên hệ hỗ trợ</button>
@@ -455,9 +457,16 @@ export default function UserPage() {
               <div className={styles.reportButtons}>
                 <button 
                   className={styles.reportButton}
+                  onClick={() => router.push('/reports#apisix')}
+                >
+                  <i className="bi bi-router" style={{ marginRight: '8px' }}></i>
+                  Apache APISIX
+                </button>
+                <button 
+                  className={styles.reportButton}
                   onClick={() => router.push('/reports#node-exporter')}
                 >
-                  <i className="bi bi-server" style={{ marginRight: '8px' }}></i>
+                  <i className="bi bi-hdd-network" style={{ marginRight: '8px' }}></i>
                   Node Exporter multiple Server Metrics
                 </button>
                 <button 
@@ -481,6 +490,24 @@ export default function UserPage() {
                   <i className="bi bi-discord" style={{ marginRight: '8px' }}></i>
                   Sử dụng Discord giám sát
                 </button>
+              </div>
+              
+              {/* Phần Cần hỗ trợ? */}
+              <div className={styles.helpCard}>
+                <h3 className={styles.cardTitle}>Cần hỗ trợ?</h3>
+                <p>
+                  Nếu bạn gặp khó khăn hoặc cần hỗ trợ trong quá trình tạo báo cáo, vui lòng sử dụng tài liệu hướng dẫn sử dụng hoặc liên hệ với quản trị viên.
+                </p>
+                <div className={styles.helpActions}>
+                  <button className={styles.helpButton}>
+                    <i className="bi bi-headset me-2"></i>
+                    Liên hệ hỗ trợ
+                  </button>
+                  <button className={styles.helpButton}>
+                    <i className="bi bi-journal-text me-2"></i>
+                    Hướng dẫn sử dụng
+                  </button>
+                </div>
               </div>
             </div>
           )}

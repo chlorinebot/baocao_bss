@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DataSource } from 'typeorm';
+import { ValidationPipe } from '@nestjs/common';
 
 async function displayLogo() {
   console.clear();
@@ -88,35 +89,52 @@ async function bootstrap() {
   // Kiểm tra kết nối database trước
   await waitForDatabase();
   
-  try {
-    const app = await NestFactory.create(AppModule, {
-      logger: false, // Tắt tất cả NestJS logs
-    });
+  const app = await NestFactory.create(AppModule);
+  
+  // Middleware log request
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log('Headers:', req.headers);
     
-    // Enable CORS if needed
-    app.enableCors({
-      origin: true, // Cho phép tất cả origins
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-      credentials: true,
-      preflightContinue: false,
-      optionsSuccessStatus: 204
-    });
+    // Log body cho các request POST/PUT
+    if (['POST', 'PUT'].includes(req.method)) {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      req.on('end', () => {
+        console.log('Body:', body);
+      });
+    }
     
-    const port = process.env.PORT || 3000;
-    await app.listen(port);
-    
-    console.log('✅ Server khởi động thành công!');
-    console.log(`🌐 Server đang chạy tại: http://localhost:${port}`);
-    console.log(`🏥 Health check: http://localhost:${port}/health`);
-    console.log(`👥 Users API: http://localhost:${port}/users`);
-    console.log(`💼 Work Assignment API: http://localhost:${port}/work-schedule`);
-    console.log('📝 Server sẵn sàng xử lý requests...');
-    
-  } catch (error) {
-    console.error('❌ Lỗi khởi động server:', error.message);
-    process.exit(1);
-  }
+    next();
+  });
+
+  // Cấu hình CORS
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:9999', 'login:9999'], // Thêm các origin cần thiết
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
+    credentials: true,
+  });
+
+  // Sử dụng validation pipe
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+  }));
+
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  
+  console.log('✅ Server khởi động thành công!');
+  console.log(`🌐 Server đang chạy tại: http://localhost:${port}`);
+  console.log(`�� Health check: http://localhost:${port}/health`);
+  console.log(`👥 Users API: http://localhost:${port}/users`);
+  console.log(`💼 Work Assignment API: http://localhost:${port}/work-schedule`);
+  console.log('📝 Server sẵn sàng xử lý requests...');
+  
 }
 
 bootstrap().catch((error) => {

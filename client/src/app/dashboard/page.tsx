@@ -295,6 +295,12 @@ export default function DashboardPage() {
         return;
       }
 
+      // Đảm bảo token được lưu trong cookie
+      if (token) {
+        document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Strict`;
+        console.log('🍪 Đã cập nhật token trong cookie từ trang dashboard');
+      }
+
       // Tạo object user với đầy đủ thông tin cho dashboard
       const fullUser: User = {
         id: userInfo.id,
