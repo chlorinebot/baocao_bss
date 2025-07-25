@@ -240,7 +240,12 @@ export default function ReportForm() {
 
         const nemsmResult = await nemsmResponse.json();
         console.log('✅ Gửi dữ liệu NEMSM thành công:', nemsmResult);
+        
+        // Lưu reportId vào sessionStorage để trang review có thể sử dụng
+        // sessionStorage code moved to individual sections
+        
         alert(`Đã gửi báo cáo ${sectionName} và dữ liệu NEMSM thành công!`);
+        router.push('/reports/review');
         
       } else if (sectionName === 'Apache APISIX') {
         // Xử lý riêng cho Apache APISIX
@@ -723,6 +728,12 @@ export default function ReportForm() {
         console.log('✅ Gửi báo cáo section thành công:', result);
         alert(`Đã gửi báo cáo ${sectionName} thành công!`);
       }
+
+      // Lưu reportId vào sessionStorage để trang review có thể sử dụng
+      // sessionStorage.setItem('latestReportId', result.id.toString()); // result not available here
+      
+      // alert('Gửi báo cáo thành công!');
+      // router.push('/reports/review');
     } catch (error) {
       console.error(`❌ Lỗi khi gửi báo cáo cho ${sectionName}:`, error);
       console.error('❌ Chi tiết lỗi:', {
@@ -1114,8 +1125,11 @@ export default function ReportForm() {
         alert('Báo cáo chính đã được lưu thành công, nhưng có lỗi khi lưu dữ liệu Cảnh báo: ' + (alertError instanceof Error ? alertError.message : 'Lỗi không xác định'));
       }
 
+      // Lưu reportId vào sessionStorage để trang review có thể sử dụng
+      sessionStorage.setItem('latestReportId', result.id.toString());
+      
       alert('Gửi báo cáo thành công!');
-      router.push('/reports/history');
+      router.push('/reports/review');
     } catch (error) {
       console.error('❌ Lỗi khi gửi báo cáo:', error);
       console.error('❌ Chi tiết lỗi:', {
