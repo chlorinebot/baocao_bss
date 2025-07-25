@@ -15,11 +15,17 @@ import { PatroniReportsController } from './patroni-reports.controller';
 import { TransactionReport } from '../entities/transaction-report.entity';
 import { TransactionReportsService } from './transaction-reports.service';
 import { TransactionReportsController } from './transaction-reports.controller';
+import { HeartbeatReport } from '../entities/heartbeat-report.entity';
+import { HeartbeatReportsService } from './heartbeat-reports.service';
+import { HeartbeatReportsController } from './heartbeat-reports.controller';
+import { AlertReport } from '../entities/alert-report.entity';
+import { AlertReportsService } from './alert-reports.service';
+import { AlertReportsController } from './alert-reports.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Report, NemsmReport, ApisixReport, PatroniReport, TransactionReport])],
-  providers: [ReportsService, NemsmReportsService, ApisixReportsService, PatroniReportsService, TransactionReportsService],
-  controllers: [ReportsController, NemsmReportsController, ApisixReportsController, PatroniReportsController, TransactionReportsController],
-  exports: [ReportsService, NemsmReportsService, ApisixReportsService, PatroniReportsService, TransactionReportsService],
+  imports: [TypeOrmModule.forFeature([Report, NemsmReport, ApisixReport, PatroniReport, TransactionReport, HeartbeatReport, AlertReport])],
+  providers: [ReportsService, NemsmReportsService, ApisixReportsService, PatroniReportsService, TransactionReportsService, HeartbeatReportsService, AlertReportsService],
+  controllers: [ReportsController, NemsmReportsController, ApisixReportsController, PatroniReportsController, TransactionReportsController, HeartbeatReportsController, AlertReportsController],
+  exports: [ReportsService, NemsmReportsService, ApisixReportsService, PatroniReportsService, TransactionReportsService, HeartbeatReportsService, AlertReportsService],
 })
 export class ReportsModule {} 

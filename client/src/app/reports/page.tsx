@@ -502,6 +502,177 @@ export default function ReportForm() {
           alert(`Đã gửi báo cáo ${sectionName} thành công!`);
         }
         
+      } else if (sectionName === 'Heartbeat') {
+        // Xử lý riêng cho PostgreHeartbeat
+        // Lấy id_user từ localStorage
+        let id_user = null;
+        try {
+          const userInfoStr = localStorage.getItem('userInfo');
+          if (userInfoStr) {
+            const userInfo = JSON.parse(userInfoStr);
+            id_user = userInfo.id;
+          }
+        } catch (e) {}
+        
+        if (!id_user) {
+          alert('Không xác định được user. Vui lòng đăng nhập lại.');
+          return;
+        }
+
+        // Tạo report chính trước
+        const mainReport = {
+          id_user,
+          content: JSON.stringify({
+            date: new Date().toISOString().split('T')[0],
+            section: sectionName,
+            timestamp: new Date().toISOString()
+          })
+        };
+
+        console.log('🚀 Đang tạo báo cáo chính cho PostgreHeartbeat:', mainReport);
+
+        const reportResponse = await fetch('/api/reports', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(mainReport),
+        });
+
+        if (!reportResponse.ok) {
+          const errorData = await reportResponse.json();
+          throw new Error(errorData.message || 'Lỗi khi tạo báo cáo chính');
+        }
+
+        const reportResult = await reportResponse.json();
+        console.log('✅ Tạo báo cáo chính thành công:', reportResult);
+
+        // Chuẩn bị dữ liệu PostgreHeartbeat từ checkbox states (4 hàng)
+        const heartbeatData = Array.from({ length: 4 }, (_, index) => ({
+          rowIndex: index + 1,
+          heartbeat_86: checkboxStates[`heartbeat_${index}_86`] || false,
+          heartbeat_87: checkboxStates[`heartbeat_${index}_87`] || false,
+          heartbeat_88: checkboxStates[`heartbeat_${index}_88`] || false,
+          notes: notes[`heartbeat_${index}_note`] || ''
+        }));
+
+        // Chỉ gửi dữ liệu PostgreHeartbeat nếu có ít nhất một hàng có dữ liệu
+        const hasHeartbeatData = heartbeatData.some(row => 
+          row.heartbeat_86 || row.heartbeat_87 || row.heartbeat_88 || row.notes.trim()
+        );
+
+        if (hasHeartbeatData) {
+          const heartbeatReportData = {
+            reportId: reportResult.id,
+            heartbeatData: heartbeatData
+          };
+
+          console.log('🚀 Đang gửi dữ liệu PostgreHeartbeat:', heartbeatReportData);
+
+          const heartbeatResponse = await fetch('/api/heartbeat-reports', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(heartbeatReportData),
+          });
+
+          if (!heartbeatResponse.ok) {
+            const errorData = await heartbeatResponse.json();
+            throw new Error(errorData.message || 'Lỗi khi gửi dữ liệu PostgreHeartbeat');
+          }
+
+          const heartbeatResult = await heartbeatResponse.json();
+          console.log('✅ Gửi dữ liệu PostgreHeartbeat thành công:', heartbeatResult);
+          alert(`Đã gửi báo cáo ${sectionName} và dữ liệu PostgreHeartbeat thành công!`);
+        } else {
+          console.log('ℹ️ Chỉ tạo báo cáo chính cho PostgreHeartbeat (không có dữ liệu checkbox)');
+          alert(`Đã gửi báo cáo ${sectionName} thành công!`);
+        }
+        
+      } else if (sectionName === 'Alerts') {
+        // Xử lý riêng cho Cảnh báo
+        // Lấy id_user từ localStorage
+        let id_user = null;
+        try {
+          const userInfoStr = localStorage.getItem('userInfo');
+          if (userInfoStr) {
+            const userInfo = JSON.parse(userInfoStr);
+            id_user = userInfo.id;
+          }
+        } catch (e) {}
+        
+        if (!id_user) {
+          alert('Không xác định được user. Vui lòng đăng nhập lại.');
+          return;
+        }
+
+        // Tạo report chính trước
+        const mainReport = {
+          id_user,
+          content: JSON.stringify({
+            date: new Date().toISOString().split('T')[0],
+            section: sectionName,
+            timestamp: new Date().toISOString()
+          })
+        };
+
+        console.log('🚀 Đang tạo báo cáo chính cho Cảnh báo:', mainReport);
+
+        const reportResponse = await fetch('/api/reports', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(mainReport),
+        });
+
+        if (!reportResponse.ok) {
+          const errorData = await reportResponse.json();
+          throw new Error(errorData.message || 'Lỗi khi tạo báo cáo chính');
+        }
+
+        const reportResult = await reportResponse.json();
+        console.log('✅ Tạo báo cáo chính thành công:', reportResult);
+
+        // Chuẩn bị dữ liệu Cảnh báo từ notes (2 hàng)
+        const alertData = {
+          note_alert_1: notes['alert_note_1'] || '',
+          note_alert_2: notes['alert_note_2'] || ''
+        };
+
+        // Chỉ gửi dữ liệu Cảnh báo nếu có ít nhất một note
+        const hasAlertData = alertData.note_alert_1.trim() || alertData.note_alert_2.trim();
+
+        if (hasAlertData) {
+          const alertReportData = {
+            reportId: reportResult.id,
+            alertData: alertData
+          };
+
+          console.log('🚀 Đang gửi dữ liệu Cảnh báo:', alertReportData);
+
+          const alertResponse = await fetch('/api/alert-reports', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(alertReportData),
+          });
+
+          if (!alertResponse.ok) {
+            const errorData = await alertResponse.json();
+            throw new Error(errorData.message || 'Lỗi khi gửi dữ liệu Cảnh báo');
+          }
+
+          const alertResult = await alertResponse.json();
+          console.log('✅ Gửi dữ liệu Cảnh báo thành công:', alertResult);
+          alert(`Đã gửi báo cáo ${sectionName} và dữ liệu Cảnh báo thành công!`);
+        } else {
+          console.log('ℹ️ Chỉ tạo báo cáo chính cho Cảnh báo (không có ghi chú)');
+          alert(`Đã gửi báo cáo ${sectionName} thành công!`);
+        }
+        
       } else {
         // Xử lý cho các section khác (logic cũ)
         const report = {
@@ -842,6 +1013,105 @@ export default function ReportForm() {
         console.error('❌ Lỗi khi gửi dữ liệu Database Transactions:', transactionError);
         // Không throw error ở đây để không làm fail toàn bộ quá trình
         alert('Báo cáo chính đã được lưu thành công, nhưng có lỗi khi lưu dữ liệu Database Transactions: ' + (transactionError instanceof Error ? transactionError.message : 'Lỗi không xác định'));
+      }
+
+      // Sau khi xử lý Database Transactions, tự động tạo dữ liệu PostgreHeartbeat
+      try {
+        console.log('🔄 Bắt đầu tạo dữ liệu PostgreHeartbeat với Report ID:', result.id);
+        
+        // Chuẩn bị dữ liệu PostgreHeartbeat từ checkbox states (4 hàng)
+        const heartbeatData = Array.from({ length: 4 }, (_, index) => ({
+          rowIndex: index + 1,
+          heartbeat_86: checkboxStates[`heartbeat_${index}_86`] || false,
+          heartbeat_87: checkboxStates[`heartbeat_${index}_87`] || false,
+          heartbeat_88: checkboxStates[`heartbeat_${index}_88`] || false,
+          notes: notes[`heartbeat_${index}_note`] || ''
+        }));
+
+        // Chỉ gửi dữ liệu PostgreHeartbeat nếu có ít nhất một hàng có dữ liệu
+        const hasHeartbeatData = heartbeatData.some(row => 
+          row.heartbeat_86 || row.heartbeat_87 || row.heartbeat_88 || row.notes.trim()
+        );
+
+        if (hasHeartbeatData) {
+          const heartbeatReportData = {
+            reportId: result.id,
+            heartbeatData: heartbeatData
+          };
+
+          console.log('🚀 Đang gửi dữ liệu PostgreHeartbeat:', heartbeatReportData);
+
+          const heartbeatResponse = await fetch('/api/heartbeat-reports', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(heartbeatReportData),
+          });
+
+          if (!heartbeatResponse.ok) {
+            const heartbeatErrorData = await heartbeatResponse.json();
+            console.error('⚠️ Không thể lưu dữ liệu PostgreHeartbeat:', heartbeatErrorData);
+            // Không throw error ở đây để không làm fail toàn bộ quá trình
+            alert('Báo cáo chính đã được lưu thành công, nhưng có lỗi khi lưu dữ liệu PostgreHeartbeat: ' + heartbeatErrorData.error);
+          } else {
+            const heartbeatResult = await heartbeatResponse.json();
+            console.log('✅ Gửi dữ liệu PostgreHeartbeat thành công:', heartbeatResult);
+          }
+        } else {
+          console.log('ℹ️ Không có dữ liệu PostgreHeartbeat nào để gửi');
+        }
+      } catch (heartbeatError) {
+        console.error('❌ Lỗi khi gửi dữ liệu PostgreHeartbeat:', heartbeatError);
+        // Không throw error ở đây để không làm fail toàn bộ quá trình
+        alert('Báo cáo chính đã được lưu thành công, nhưng có lỗi khi lưu dữ liệu PostgreHeartbeat: ' + (heartbeatError instanceof Error ? heartbeatError.message : 'Lỗi không xác định'));
+      }
+
+      // Cuối cùng, tự động tạo dữ liệu Cảnh báo (Alert Reports)
+      try {
+        console.log('🔄 Bắt đầu tạo dữ liệu Cảnh báo với Report ID:', result.id);
+        
+        // Chuẩn bị dữ liệu Cảnh báo từ notes (2 hàng)
+        const alertData = {
+          note_alert_1: notes['alert_note_1'] || '',
+          note_alert_2: notes['alert_note_2'] || ''
+        };
+
+        // Chỉ gửi dữ liệu Cảnh báo nếu có ít nhất một note
+        const hasAlertData = alertData.note_alert_1.trim() || alertData.note_alert_2.trim();
+
+        if (hasAlertData) {
+          const alertReportData = {
+            reportId: result.id,
+            alertData: alertData
+          };
+
+          console.log('🚀 Đang gửi dữ liệu Cảnh báo:', alertReportData);
+
+          const alertResponse = await fetch('/api/alert-reports', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(alertReportData),
+          });
+
+          if (!alertResponse.ok) {
+            const alertErrorData = await alertResponse.json();
+            console.error('⚠️ Không thể lưu dữ liệu Cảnh báo:', alertErrorData);
+            // Không throw error ở đây để không làm fail toàn bộ quá trình
+            alert('Báo cáo chính đã được lưu thành công, nhưng có lỗi khi lưu dữ liệu Cảnh báo: ' + alertErrorData.error);
+          } else {
+            const alertResult = await alertResponse.json();
+            console.log('✅ Gửi dữ liệu Cảnh báo thành công:', alertResult);
+          }
+        } else {
+          console.log('ℹ️ Không có dữ liệu Cảnh báo nào để gửi');
+        }
+      } catch (alertError) {
+        console.error('❌ Lỗi khi gửi dữ liệu Cảnh báo:', alertError);
+        // Không throw error ở đây để không làm fail toàn bộ quá trình
+        alert('Báo cáo chính đã được lưu thành công, nhưng có lỗi khi lưu dữ liệu Cảnh báo: ' + (alertError instanceof Error ? alertError.message : 'Lỗi không xác định'));
       }
 
       alert('Gửi báo cáo thành công!');
@@ -1543,111 +1813,33 @@ export default function ReportForm() {
                       <thead className="table-light">
                         <tr>
                           <th scope="col" className="text-center">STT</th>
-                          <th scope="col">Cảnh báo</th>
+                          <th scope="col">Loại cảnh báo</th>
                           <th scope="col">Ghi chú</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
                           <td className="text-center">1</td>
-                          <td>
-                            <div className="d-flex gap-4">
-                              <div className="form-check">
-                                <input
-                                  type="checkbox"
-                                  checked={checkboxStates['alert_warning'] || false}
-                                  onChange={() => handleCheckboxChange('alert_warning')}
-                                  className="form-check-input"
-                                  id="alert_warning"
-                                />
-                                <label className="form-check-label" htmlFor="alert_warning">
-                                  Warning
-                                </label>
-                              </div>
-                              <div className="form-check">
-                                <input
-                                  type="checkbox"
-                                  checked={checkboxStates['alert_critical'] || false}
-                                  onChange={() => handleCheckboxChange('alert_critical')}
-                                  className="form-check-input"
-                                  id="alert_critical"
-                                />
-                                <label className="form-check-label" htmlFor="alert_critical">
-                                  Critical
-                                </label>
-                              </div>
-                              <div className="form-check">
-                                <input
-                                  type="checkbox"
-                                  checked={checkboxStates['alert_info'] || false}
-                                  onChange={() => handleCheckboxChange('alert_info')}
-                                  className="form-check-input"
-                                  id="alert_info"
-                                />
-                                <label className="form-check-label" htmlFor="alert_info">
-                                  Info
-                                </label>
-                              </div>
-                            </div>
-                          </td>
+                          <td>Warning / Critical / Info</td>
                           <td>
                             <textarea
                               rows={1}
                               value={notes['alert_note_1'] || ''}
                               onChange={(e) => handleNoteChange('alert_note_1', e.target.value)}
-                              placeholder="Ghi chú..."
+                              placeholder="Ghi chú cảnh báo loại 1..."
                               className="form-control form-control-sm"
                             />
                           </td>
                         </tr>
                         <tr>
                           <td className="text-center">2</td>
-                          <td>
-                            <div className="d-flex gap-4">
-                              <div className="form-check">
-                                <input
-                                  type="checkbox"
-                                  checked={checkboxStates['alert_info_backup'] || false}
-                                  onChange={() => handleCheckboxChange('alert_info_backup')}
-                                  className="form-check-input"
-                                  id="alert_info_backup"
-                                />
-                                <label className="form-check-label" htmlFor="alert_info_backup">
-                                  Info backup
-                                </label>
-                              </div>
-                              <div className="form-check">
-                                <input
-                                  type="checkbox"
-                                  checked={checkboxStates['alert_warning_disk'] || false}
-                                  onChange={() => handleCheckboxChange('alert_warning_disk')}
-                                  className="form-check-input"
-                                  id="alert_warning_disk"
-                                />
-                                <label className="form-check-label" htmlFor="alert_warning_disk">
-                                  Warning Disk
-                                </label>
-                              </div>
-                              <div className="form-check">
-                                <input
-                                  type="checkbox"
-                                  checked={checkboxStates['alert_other'] || false}
-                                  onChange={() => handleCheckboxChange('alert_other')}
-                                  className="form-check-input"
-                                  id="alert_other"
-                                />
-                                <label className="form-check-label" htmlFor="alert_other">
-                                  Other
-                                </label>
-                              </div>
-                            </div>
-                          </td>
+                          <td>Info backup / Warning Disk / Other</td>
                           <td>
                             <textarea
                               rows={1}
                               value={notes['alert_note_2'] || ''}
                               onChange={(e) => handleNoteChange('alert_note_2', e.target.value)}
-                              placeholder="Ghi chú..."
+                              placeholder="Ghi chú cảnh báo loại 2..."
                               className="form-control form-control-sm"
                             />
                           </td>
