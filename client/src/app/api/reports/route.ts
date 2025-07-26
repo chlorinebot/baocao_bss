@@ -76,5 +76,61 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+  try {
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '') || request.cookies.get('token')?.value;
+    
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Token not found' },
+        { status: 401 }
+      );
+    }
+
+    // Lấy query parameters
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('user_id');
+    
+    let url = `${BACKEND_URL}/reports`;
+    if (userId) {
+      url += `?user_id=${userId}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          const errorText = await response.text();
+          errorData = { message: errorText || 'Failed to fetch reports' };
+        }
+        return NextResponse.json(
+          { error: errorData.message || 'Failed to fetch reports' },
+          { status: response.status }
+        );
+      }
+
+      const data = await response.json();
+      return NextResponse.json(data);
+      
+    } catch (fetchError) {
+      return NextResponse.json(
+        { error: `Không thể kết nối đến backend: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}` },
+        { status: 503 }
+      );
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { status: 500 }
+    );
+  }
 } 

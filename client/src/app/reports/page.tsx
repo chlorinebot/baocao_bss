@@ -30,16 +30,6 @@ export default function ReportForm() {
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState('node-exporter');
   
-  // Thêm state cho loading từng bảng
-  const [loadingSections, setLoadingSections] = useState({
-    nodeExporter: false,
-    patroni: false,
-    transactions: false,
-    heartbeat: false,
-    alerts: false,
-    apisix: false
-  });
-
   useEffect(() => {
     // Scroll tới section tương ứng nếu có hash trong URL
     const hash = window.location.hash;
@@ -127,627 +117,6 @@ export default function ReportForm() {
       ...prev,
       [key]: value
     }));
-  };
-
-  // Hàm gửi báo cáo cho từng section
-  const handleSubmitSection = async (sectionName: string) => {
-    // Đánh dấu section đang loading
-    const sectionKey = sectionName === 'Node Exporter' ? 'nodeExporter' : 
-                      sectionName === 'Patroni' ? 'patroni' : 
-                      sectionName === 'Transactions' ? 'transactions' : 
-                      sectionName === 'Heartbeat' ? 'heartbeat' : 
-                      sectionName === 'Alerts' ? 'alerts' : 
-                      sectionName === 'Apache APISIX' ? 'apisix' : 
-                      sectionName.toLowerCase().replace(/\s+/g, '');
-    
-    setLoadingSections(prev => ({
-      ...prev,
-      [sectionKey]: true
-    }));
-    
-    try {
-      // Kiểm tra cookie token
-      const cookies = document.cookie.split(';').map(cookie => cookie.trim());
-      const tokenCookie = cookies.find(cookie => cookie.startsWith('token='));
-      const token = tokenCookie ? tokenCookie.split('=')[1] : null;
-      
-      console.log('🔑 Cookie hiện tại:', document.cookie);
-      console.log('🔑 Token từ cookie:', token);
-      
-      if (!token) {
-        console.error('❌ Không tìm thấy token trong cookie');
-        alert('Bạn cần đăng nhập lại để thực hiện chức năng này');
-        router.push('/login');
-        return;
-      }
-
-      // Xử lý riêng cho Node Exporter
-      if (sectionName === 'Node Exporter') {
-        // Lấy id_user từ localStorage
-        let id_user = null;
-        try {
-          const userInfoStr = localStorage.getItem('userInfo');
-          if (userInfoStr) {
-            const userInfo = JSON.parse(userInfoStr);
-            id_user = userInfo.id;
-          }
-        } catch (e) {}
-        
-        if (!id_user) {
-          alert('Không xác định được user. Vui lòng đăng nhập lại.');
-          return;
-        }
-
-        // Tạo report chính trước
-        const mainReport = {
-          id_user,
-          content: JSON.stringify({
-            date: new Date().toISOString().split('T')[0],
-            section: sectionName,
-            timestamp: new Date().toISOString()
-          })
-        };
-
-        console.log('🚀 Đang tạo báo cáo chính cho Node Exporter:', mainReport);
-
-        const reportResponse = await fetch('/api/reports', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mainReport),
-        });
-
-        if (!reportResponse.ok) {
-          const errorData = await reportResponse.json();
-          throw new Error(errorData.message || 'Lỗi khi tạo báo cáo chính');
-        }
-
-        const reportResult = await reportResponse.json();
-        console.log('✅ Tạo báo cáo chính thành công:', reportResult);
-
-        // Chuẩn bị dữ liệu NEMSM từ checkbox states
-        const nemsmData = servers.map(server => ({
-          serverId: server.id,
-          cpu: checkboxStates[`server_${server.id}_cpu`] || false,
-          memory: checkboxStates[`server_${server.id}_memory`] || false,
-          disk: checkboxStates[`server_${server.id}_disk`] || false,
-          network: checkboxStates[`server_${server.id}_network`] || false,
-          netstat: checkboxStates[`server_${server.id}_netstat`] || false,
-          notes: notes[`server_${server.id}_note`] || ''
-        }));
-
-        // Gửi dữ liệu NEMSM
-        const nemsmReportData = {
-          reportId: reportResult.id,
-          nemsmData: nemsmData
-        };
-
-        console.log('🚀 Đang gửi dữ liệu NEMSM:', nemsmReportData);
-
-        const nemsmResponse = await fetch('/api/nemsm-reports', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(nemsmReportData),
-        });
-
-        if (!nemsmResponse.ok) {
-          const errorData = await nemsmResponse.json();
-          throw new Error(errorData.message || 'Lỗi khi gửi dữ liệu NEMSM');
-        }
-
-        const nemsmResult = await nemsmResponse.json();
-        console.log('✅ Gửi dữ liệu NEMSM thành công:', nemsmResult);
-        
-        // Lưu reportId vào sessionStorage để trang review có thể sử dụng
-        // sessionStorage code moved to individual sections
-        
-        alert(`Đã gửi báo cáo ${sectionName} và dữ liệu NEMSM thành công!`);
-        router.push('/reports/review');
-        
-      } else if (sectionName === 'Apache APISIX') {
-        // Xử lý riêng cho Apache APISIX
-        // Lấy id_user từ localStorage
-        let id_user = null;
-        try {
-          const userInfoStr = localStorage.getItem('userInfo');
-          if (userInfoStr) {
-            const userInfo = JSON.parse(userInfoStr);
-            id_user = userInfo.id;
-          }
-        } catch (e) {}
-        
-        if (!id_user) {
-          alert('Không xác định được user. Vui lòng đăng nhập lại.');
-          return;
-        }
-
-        // Tạo report chính trước
-        const mainReport = {
-          id_user,
-          content: JSON.stringify({
-            date: new Date().toISOString().split('T')[0],
-            section: sectionName,
-            timestamp: new Date().toISOString()
-          })
-        };
-
-        console.log('🚀 Đang tạo báo cáo chính cho Apache APISIX:', mainReport);
-
-        const reportResponse = await fetch('/api/reports', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mainReport),
-        });
-
-        if (!reportResponse.ok) {
-          const errorData = await reportResponse.json();
-          throw new Error(errorData.message || 'Lỗi khi tạo báo cáo chính');
-        }
-
-        const reportResult = await reportResponse.json();
-        console.log('✅ Tạo báo cáo chính thành công:', reportResult);
-
-        // Chuẩn bị dữ liệu Apache APISIX từ notes
-        const apisixData = {
-          note_request: notes['apisix_request_latency_note'] || '',
-          note_upstream: notes['apisix_upstream_latency_note'] || ''
-        };
-
-        // Chỉ gửi dữ liệu Apache APISIX nếu có ít nhất một note
-        const hasApisixData = apisixData.note_request.trim() || apisixData.note_upstream.trim();
-
-        if (hasApisixData) {
-          const apisixReportData = {
-            reportId: reportResult.id,
-            apisixData: apisixData
-          };
-
-          console.log('🚀 Đang gửi dữ liệu Apache APISIX:', apisixReportData);
-
-          const apisixResponse = await fetch('/api/apisix-reports', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(apisixReportData),
-          });
-
-          if (!apisixResponse.ok) {
-            const errorData = await apisixResponse.json();
-            throw new Error(errorData.message || 'Lỗi khi gửi dữ liệu Apache APISIX');
-          }
-
-          const apisixResult = await apisixResponse.json();
-          console.log('✅ Gửi dữ liệu Apache APISIX thành công:', apisixResult);
-          alert(`Đã gửi báo cáo ${sectionName} và dữ liệu Apache APISIX thành công!`);
-        } else {
-          console.log('ℹ️ Chỉ tạo báo cáo chính cho Apache APISIX (không có ghi chú)');
-          alert(`Đã gửi báo cáo ${sectionName} thành công!`);
-        }
-        
-      } else if (sectionName === 'Patroni') {
-        // Xử lý riêng cho PostgreSQL Patroni
-        // Lấy id_user từ localStorage
-        let id_user = null;
-        try {
-          const userInfoStr = localStorage.getItem('userInfo');
-          if (userInfoStr) {
-            const userInfo = JSON.parse(userInfoStr);
-            id_user = userInfo.id;
-          }
-        } catch (e) {}
-        
-        if (!id_user) {
-          alert('Không xác định được user. Vui lòng đăng nhập lại.');
-          return;
-        }
-
-        // Tạo report chính trước
-        const mainReport = {
-          id_user,
-          content: JSON.stringify({
-            date: new Date().toISOString().split('T')[0],
-            section: sectionName,
-            timestamp: new Date().toISOString()
-          })
-        };
-
-        console.log('🚀 Đang tạo báo cáo chính cho PostgreSQL Patroni:', mainReport);
-
-        const reportResponse = await fetch('/api/reports', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mainReport),
-        });
-
-        if (!reportResponse.ok) {
-          const errorData = await reportResponse.json();
-          throw new Error(errorData.message || 'Lỗi khi tạo báo cáo chính');
-        }
-
-        const reportResult = await reportResponse.json();
-        console.log('✅ Tạo báo cáo chính thành công:', reportResult);
-
-        // Chuẩn bị dữ liệu PostgreSQL Patroni từ checkbox states (16 hàng)
-        const patroniData = Array.from({ length: 16 }, (_, index) => ({
-          rowIndex: index + 1,
-          primary_node: checkboxStates[`patroni_${index}_primary`] || false,
-          wal_replay_paused: checkboxStates[`patroni_${index}_wal_replay`] || false,
-          replicas_received_wal: checkboxStates[`patroni_${index}_replicas_received`] || false,
-          primary_wal_location: checkboxStates[`patroni_${index}_primary_wal`] || false,
-          replicas_replayed_wal: checkboxStates[`patroni_${index}_replicas_replayed`] || false,
-          notes: notes[`patroni_${index}_note`] || ''
-        }));
-
-        // Chỉ gửi dữ liệu PostgreSQL Patroni nếu có ít nhất một hàng có dữ liệu
-        const hasPatroniData = patroniData.some(row => 
-          row.primary_node || row.wal_replay_paused || row.replicas_received_wal || 
-          row.primary_wal_location || row.replicas_replayed_wal || row.notes.trim()
-        );
-
-        if (hasPatroniData) {
-          const patroniReportData = {
-            reportId: reportResult.id,
-            patroniData: patroniData
-          };
-
-          console.log('🚀 Đang gửi dữ liệu PostgreSQL Patroni:', patroniReportData);
-
-          const patroniResponse = await fetch('/api/patroni-reports', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(patroniReportData),
-          });
-
-          if (!patroniResponse.ok) {
-            const errorData = await patroniResponse.json();
-            throw new Error(errorData.message || 'Lỗi khi gửi dữ liệu PostgreSQL Patroni');
-          }
-
-          const patroniResult = await patroniResponse.json();
-          console.log('✅ Gửi dữ liệu PostgreSQL Patroni thành công:', patroniResult);
-          alert(`Đã gửi báo cáo ${sectionName} và dữ liệu PostgreSQL Patroni thành công!`);
-        } else {
-          console.log('ℹ️ Chỉ tạo báo cáo chính cho PostgreSQL Patroni (không có dữ liệu checkbox)');
-          alert(`Đã gửi báo cáo ${sectionName} thành công!`);
-        }
-        
-      } else if (sectionName === 'Transactions') {
-        // Xử lý riêng cho Database Transactions
-        // Lấy id_user từ localStorage
-        let id_user = null;
-        try {
-          const userInfoStr = localStorage.getItem('userInfo');
-          if (userInfoStr) {
-            const userInfo = JSON.parse(userInfoStr);
-            id_user = userInfo.id;
-          }
-        } catch (e) {}
-        
-        if (!id_user) {
-          alert('Không xác định được user. Vui lòng đăng nhập lại.');
-          return;
-        }
-
-        // Tạo report chính trước
-        const mainReport = {
-          id_user,
-          content: JSON.stringify({
-            date: new Date().toISOString().split('T')[0],
-            section: sectionName,
-            timestamp: new Date().toISOString()
-          })
-        };
-
-        console.log('🚀 Đang tạo báo cáo chính cho Database Transactions:', mainReport);
-
-        const reportResponse = await fetch('/api/reports', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mainReport),
-        });
-
-        if (!reportResponse.ok) {
-          const errorData = await reportResponse.json();
-          throw new Error(errorData.message || 'Lỗi khi tạo báo cáo chính');
-        }
-
-        const reportResult = await reportResponse.json();
-        console.log('✅ Tạo báo cáo chính thành công:', reportResult);
-
-        // Chuẩn bị dữ liệu Database Transactions từ checkbox states (16 hàng)
-        const transactionData = Array.from({ length: 16 }, (_, index) => ({
-          rowIndex: index + 1,
-          transaction_monitored: checkboxStates[`transaction_${index}_monitored`] || false,
-          notes: notes[`transaction_${index}_note`] || ''
-        }));
-
-        // Chỉ gửi dữ liệu Database Transactions nếu có ít nhất một hàng có dữ liệu
-        const hasTransactionData = transactionData.some(row => 
-          row.transaction_monitored || row.notes.trim()
-        );
-
-        if (hasTransactionData) {
-          const transactionReportData = {
-            reportId: reportResult.id,
-            transactionData: transactionData
-          };
-
-          console.log('🚀 Đang gửi dữ liệu Database Transactions:', transactionReportData);
-
-          const transactionResponse = await fetch('/api/transaction-reports', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(transactionReportData),
-          });
-
-          if (!transactionResponse.ok) {
-            const errorData = await transactionResponse.json();
-            throw new Error(errorData.message || 'Lỗi khi gửi dữ liệu Database Transactions');
-          }
-
-          const transactionResult = await transactionResponse.json();
-          console.log('✅ Gửi dữ liệu Database Transactions thành công:', transactionResult);
-          alert(`Đã gửi báo cáo ${sectionName} và dữ liệu Database Transactions thành công!`);
-        } else {
-          console.log('ℹ️ Chỉ tạo báo cáo chính cho Database Transactions (không có dữ liệu checkbox)');
-          alert(`Đã gửi báo cáo ${sectionName} thành công!`);
-        }
-        
-      } else if (sectionName === 'Heartbeat') {
-        // Xử lý riêng cho PostgreHeartbeat
-        // Lấy id_user từ localStorage
-        let id_user = null;
-        try {
-          const userInfoStr = localStorage.getItem('userInfo');
-          if (userInfoStr) {
-            const userInfo = JSON.parse(userInfoStr);
-            id_user = userInfo.id;
-          }
-        } catch (e) {}
-        
-        if (!id_user) {
-          alert('Không xác định được user. Vui lòng đăng nhập lại.');
-          return;
-        }
-
-        // Tạo report chính trước
-        const mainReport = {
-          id_user,
-          content: JSON.stringify({
-            date: new Date().toISOString().split('T')[0],
-            section: sectionName,
-            timestamp: new Date().toISOString()
-          })
-        };
-
-        console.log('🚀 Đang tạo báo cáo chính cho PostgreHeartbeat:', mainReport);
-
-        const reportResponse = await fetch('/api/reports', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mainReport),
-        });
-
-        if (!reportResponse.ok) {
-          const errorData = await reportResponse.json();
-          throw new Error(errorData.message || 'Lỗi khi tạo báo cáo chính');
-        }
-
-        const reportResult = await reportResponse.json();
-        console.log('✅ Tạo báo cáo chính thành công:', reportResult);
-
-        // Chuẩn bị dữ liệu PostgreHeartbeat từ checkbox states (4 hàng)
-        const heartbeatData = Array.from({ length: 4 }, (_, index) => ({
-          rowIndex: index + 1,
-          heartbeat_86: checkboxStates[`heartbeat_${index}_86`] || false,
-          heartbeat_87: checkboxStates[`heartbeat_${index}_87`] || false,
-          heartbeat_88: checkboxStates[`heartbeat_${index}_88`] || false,
-          notes: notes[`heartbeat_${index}_note`] || ''
-        }));
-
-        // Chỉ gửi dữ liệu PostgreHeartbeat nếu có ít nhất một hàng có dữ liệu
-        const hasHeartbeatData = heartbeatData.some(row => 
-          row.heartbeat_86 || row.heartbeat_87 || row.heartbeat_88 || row.notes.trim()
-        );
-
-        if (hasHeartbeatData) {
-          const heartbeatReportData = {
-            reportId: reportResult.id,
-            heartbeatData: heartbeatData
-          };
-
-          console.log('🚀 Đang gửi dữ liệu PostgreHeartbeat:', heartbeatReportData);
-
-          const heartbeatResponse = await fetch('/api/heartbeat-reports', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(heartbeatReportData),
-          });
-
-          if (!heartbeatResponse.ok) {
-            const errorData = await heartbeatResponse.json();
-            throw new Error(errorData.message || 'Lỗi khi gửi dữ liệu PostgreHeartbeat');
-          }
-
-          const heartbeatResult = await heartbeatResponse.json();
-          console.log('✅ Gửi dữ liệu PostgreHeartbeat thành công:', heartbeatResult);
-          alert(`Đã gửi báo cáo ${sectionName} và dữ liệu PostgreHeartbeat thành công!`);
-        } else {
-          console.log('ℹ️ Chỉ tạo báo cáo chính cho PostgreHeartbeat (không có dữ liệu checkbox)');
-          alert(`Đã gửi báo cáo ${sectionName} thành công!`);
-        }
-        
-      } else if (sectionName === 'Alerts') {
-        // Xử lý riêng cho Cảnh báo
-        // Lấy id_user từ localStorage
-        let id_user = null;
-        try {
-          const userInfoStr = localStorage.getItem('userInfo');
-          if (userInfoStr) {
-            const userInfo = JSON.parse(userInfoStr);
-            id_user = userInfo.id;
-          }
-        } catch (e) {}
-        
-        if (!id_user) {
-          alert('Không xác định được user. Vui lòng đăng nhập lại.');
-          return;
-        }
-
-        // Tạo report chính trước
-        const mainReport = {
-          id_user,
-          content: JSON.stringify({
-            date: new Date().toISOString().split('T')[0],
-            section: sectionName,
-            timestamp: new Date().toISOString()
-          })
-        };
-
-        console.log('🚀 Đang tạo báo cáo chính cho Cảnh báo:', mainReport);
-
-        const reportResponse = await fetch('/api/reports', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mainReport),
-        });
-
-        if (!reportResponse.ok) {
-          const errorData = await reportResponse.json();
-          throw new Error(errorData.message || 'Lỗi khi tạo báo cáo chính');
-        }
-
-        const reportResult = await reportResponse.json();
-        console.log('✅ Tạo báo cáo chính thành công:', reportResult);
-
-        // Chuẩn bị dữ liệu Cảnh báo từ notes (2 hàng)
-        const alertData = {
-          note_alert_1: notes['alert_note_1'] || '',
-          note_alert_2: notes['alert_note_2'] || ''
-        };
-
-        // Chỉ gửi dữ liệu Cảnh báo nếu có ít nhất một note
-        const hasAlertData = alertData.note_alert_1.trim() || alertData.note_alert_2.trim();
-
-        if (hasAlertData) {
-          const alertReportData = {
-            reportId: reportResult.id,
-            alertData: alertData
-          };
-
-          console.log('🚀 Đang gửi dữ liệu Cảnh báo:', alertReportData);
-
-          const alertResponse = await fetch('/api/alert-reports', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(alertReportData),
-          });
-
-          if (!alertResponse.ok) {
-            const errorData = await alertResponse.json();
-            throw new Error(errorData.message || 'Lỗi khi gửi dữ liệu Cảnh báo');
-          }
-
-          const alertResult = await alertResponse.json();
-          console.log('✅ Gửi dữ liệu Cảnh báo thành công:', alertResult);
-          alert(`Đã gửi báo cáo ${sectionName} và dữ liệu Cảnh báo thành công!`);
-        } else {
-          console.log('ℹ️ Chỉ tạo báo cáo chính cho Cảnh báo (không có ghi chú)');
-          alert(`Đã gửi báo cáo ${sectionName} thành công!`);
-        }
-        
-      } else {
-        // Xử lý cho các section khác (logic cũ)
-        const report = {
-          content: JSON.stringify({
-            date: new Date().toISOString().split('T')[0],
-            section: sectionName,
-            checkboxStates,
-            notes
-          })
-        };
-        
-        console.log('🚀 Đang gửi báo cáo section với dữ liệu:', report);
-        
-        try {
-          console.log('🔄 Kiểm tra kết nối đến API endpoint');
-          const testResponse = await fetch('/api/reports', { 
-            method: 'HEAD',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          console.log('📡 API endpoint phản hồi với status:', testResponse.status);
-        } catch (testError) {
-          console.error('❌ Không thể kết nối đến API endpoint:', testError);
-        }
-        
-        const response = await fetch('/api/reports', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(report),
-        });
-        
-        console.log('📥 Nhận phản hồi từ API với status:', response.status);
-        
-        if (response.status === 500) {
-          const errorText = await response.text();
-          console.error('❌ Lỗi server 500:', errorText);
-          throw new Error(`Lỗi server: ${response.status} - ${errorText}`);
-        }
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('❌ Lỗi từ API:', errorData);
-          throw new Error(errorData.message || `Lỗi khi gửi báo cáo cho ${sectionName}`);
-        }
-        
-        const result = await response.json();
-        console.log('✅ Gửi báo cáo section thành công:', result);
-        alert(`Đã gửi báo cáo ${sectionName} thành công!`);
-      }
-
-      // Lưu reportId vào sessionStorage để trang review có thể sử dụng
-      // sessionStorage.setItem('latestReportId', result.id.toString()); // result not available here
-      
-      // alert('Gửi báo cáo thành công!');
-      // router.push('/reports/review');
-    } catch (error) {
-      console.error(`❌ Lỗi khi gửi báo cáo cho ${sectionName}:`, error);
-      console.error('❌ Chi tiết lỗi:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      alert(`Có lỗi xảy ra khi gửi báo cáo ${sectionName}: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`);
-    } finally {
-      // Bỏ trạng thái loading
-      setLoadingSections(prev => ({
-        ...prev,
-        [sectionKey]: false
-      }));
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1270,35 +639,6 @@ export default function ReportForm() {
                       <i className="bi bi-router me-2"></i>
                       Apache APISIX
                     </h2>
-                    <div className="d-flex gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={(e) => handleSelectAllNodeExporter((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
-                      >
-                        {Object.entries(checkboxStates).some(([key, value]) => 
-                          key.startsWith('server_') && value
-                        ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-success btn-sm"
-                        onClick={() => handleSubmitSection('Apache APISIX')}
-                        disabled={loadingSections.apisix}
-                      >
-                        {loadingSections.apisix ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2"></span>
-                            Đang gửi...
-                          </>
-                        ) : (
-                          <>
-                            <i className="bi bi-send me-2"></i>
-                            Gửi (Test)
-                          </>
-                        )}
-                      </button>
-                    </div>
                   </div>
                   <div className="table-responsive">
                     <table className="table table-bordered table-hover align-middle">
@@ -1350,35 +690,15 @@ export default function ReportForm() {
                       <i className="bi bi-hdd-network me-2"></i>
                       Node Exporter Multiple Server Metrics
                     </h2>
-                    <div className="d-flex gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={(e) => handleSelectAllNodeExporter((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
-                      >
-                        {Object.entries(checkboxStates).some(([key, value]) => 
-                          key.startsWith('server_') && value
-                        ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-success btn-sm"
-                        onClick={() => handleSubmitSection('Node Exporter')}
-                        disabled={loadingSections.nodeExporter}
-                      >
-                        {loadingSections.nodeExporter ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2"></span>
-                            Đang gửi...
-                          </>
-                        ) : (
-                          <>
-                            <i className="bi bi-send me-2"></i>
-                            Gửi (Test)
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={(e) => handleSelectAllNodeExporter((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
+                    >
+                      {Object.entries(checkboxStates).some(([key, value]) => 
+                        key.startsWith('server_') && value
+                      ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
                   </div>
                   <div className="table-responsive">
                     <table className="table table-bordered table-hover align-middle">
@@ -1493,35 +813,15 @@ export default function ReportForm() {
                       <i className="bi bi-database-check me-2"></i>
                       PostgreSQL Patroni
                     </h2>
-                    <div className="d-flex gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={(e) => handleSelectAllPatroni((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
-                      >
-                        {Object.entries(checkboxStates).some(([key, value]) => 
-                          key.startsWith('patroni_') && value
-                        ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-success btn-sm"
-                        onClick={() => handleSubmitSection('Patroni')}
-                        disabled={loadingSections.patroni}
-                      >
-                        {loadingSections.patroni ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2"></span>
-                            Đang gửi...
-                          </>
-                        ) : (
-                          <>
-                            <i className="bi bi-send me-2"></i>
-                            Gửi (Test)
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={(e) => handleSelectAllPatroni((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
+                    >
+                      {Object.entries(checkboxStates).some(([key, value]) => 
+                        key.startsWith('patroni_') && value
+                      ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
                   </div>
                   <div className="table-responsive">
                     <table className="table table-bordered table-hover align-middle">
@@ -1625,35 +925,15 @@ export default function ReportForm() {
                       <i className="bi bi-arrow-left-right me-2"></i>
                       Database Transactions
                     </h2>
-                    <div className="d-flex gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={(e) => handleSelectAllTransactions((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
-                      >
-                        {Object.entries(checkboxStates).some(([key, value]) => 
-                          key.startsWith('transaction_') && value
-                        ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-success btn-sm"
-                        onClick={() => handleSubmitSection('Transactions')}
-                        disabled={loadingSections.transactions}
-                      >
-                        {loadingSections.transactions ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2"></span>
-                            Đang gửi...
-                          </>
-                        ) : (
-                          <>
-                            <i className="bi bi-send me-2"></i>
-                            Gửi (Test)
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={(e) => handleSelectAllTransactions((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
+                    >
+                      {Object.entries(checkboxStates).some(([key, value]) => 
+                        key.startsWith('transaction_') && value
+                      ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
                   </div>
                   <div className="table-responsive">
                     <table className="table table-bordered table-hover align-middle">
@@ -1703,35 +983,15 @@ export default function ReportForm() {
                       <i className="bi bi-heart-pulse me-2"></i>
                       PostgreHeartbeat
                     </h2>
-                    <div className="d-flex gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={(e) => handleSelectAllHeartbeat((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
-                      >
-                        {Object.entries(checkboxStates).some(([key, value]) => 
-                          key.startsWith('heartbeat_') && value
-                        ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-success btn-sm"
-                        onClick={() => handleSubmitSection('Heartbeat')}
-                        disabled={loadingSections.heartbeat}
-                      >
-                        {loadingSections.heartbeat ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2"></span>
-                            Đang gửi...
-                          </>
-                        ) : (
-                          <>
-                            <i className="bi bi-send me-2"></i>
-                            Gửi (Test)
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={(e) => handleSelectAllHeartbeat((e.target as HTMLButtonElement).textContent === 'Chọn tất cả')}
+                    >
+                      {Object.entries(checkboxStates).some(([key, value]) => 
+                        key.startsWith('heartbeat_') && value
+                      ) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
                   </div>
                   <div className="table-responsive">
                     <table className="table table-bordered table-hover align-middle">
@@ -1803,24 +1063,6 @@ export default function ReportForm() {
                       <i className="bi bi-exclamation-triangle me-2"></i>
                       Cảnh báo
                     </h2>
-                    <button
-                      type="button"
-                      className="btn btn-success btn-sm"
-                      onClick={() => handleSubmitSection('Alerts')}
-                      disabled={loadingSections.alerts}
-                    >
-                      {loadingSections.alerts ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2"></span>
-                          Đang gửi...
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-send me-2"></i>
-                          Gửi (Test)
-                        </>
-                      )}
-                    </button>
                   </div>
                   <div className="table-responsive">
                     <table className="table table-bordered table-hover align-middle">

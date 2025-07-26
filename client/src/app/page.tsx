@@ -104,10 +104,10 @@ export default function Home() {
             <div className={styles.featureIcon}><i className="bi bi-people-fill"></i></div>
             <h3>Quản lý người dùng</h3>
             <p>Công cụ quản lý tài khoản và phân quyền linh hoạt</p>
+            
           </div>
         </div>
       </main>
-
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
           <p>&copy; 2025 By KimTuan to 

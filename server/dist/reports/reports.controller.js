@@ -23,7 +23,14 @@ let ReportsController = class ReportsController {
     async createReport(body) {
         return this.reportsService.createReport(body.id_user, body.content);
     }
-    async getAllReports() {
+    async getAllReports(userId) {
+        if (userId) {
+            const userIdNumber = parseInt(userId, 10);
+            if (isNaN(userIdNumber)) {
+                return { error: 'Invalid user_id parameter' };
+            }
+            return this.reportsService.getReportsByUserId(userIdNumber);
+        }
         return this.reportsService.getAllReports();
     }
 };
@@ -37,8 +44,9 @@ __decorate([
 ], ReportsController.prototype, "createReport", null);
 __decorate([
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('user_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getAllReports", null);
 exports.ReportsController = ReportsController = __decorate([

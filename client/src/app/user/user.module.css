@@ -1570,3 +1570,258 @@
   font-weight: 500;
   font-family: 'Courier New', monospace;
 } 
+
+/* Filter Section */
+.filterSection {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.filterTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.filterControls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dateFilter {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.dateInput {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+}
+
+.dateLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #34495e;
+}
+
+.dateInputField {
+  padding: 8px 12px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.dateInputField:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.filterActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.clearFilterButton {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.clearFilterButton:hover:not(:disabled) {
+  background: #c0392b;
+  transform: translateY(-1px);
+}
+
+.clearFilterButton:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.filterStats {
+  font-size: 14px;
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.defaultViewNotice {
+  background: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #2980b9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.noticeContent {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.defaultViewNotice i {
+  color: #3498db;
+  font-size: 16px;
+}
+
+.showAllButton {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.showAllButton:hover {
+  background: #2980b9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.quickFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quickFilterLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #34495e;
+}
+
+.quickFilterButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quickFilterButton {
+  background: rgba(52, 152, 219, 0.1);
+  color: #2980b9;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.quickFilterButton:hover {
+  background: rgba(52, 152, 219, 0.2);
+  border-color: rgba(52, 152, 219, 0.5);
+  transform: translateY(-1px);
+}
+
+.quickFilterButton:active {
+  transform: translateY(0);
+  background: rgba(52, 152, 219, 0.3);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #7f8c8d;
+}
+
+.emptyState p {
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+.createReportButton {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 16px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.createReportButton:hover {
+  background: linear-gradient(135deg, #2980b9, #1f6b9e);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+}
+
+/* Responsive cho filter */
+@media (max-width: 768px) {
+  .dateFilter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .dateInput {
+    min-width: unset;
+  }
+  
+  .filterActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filterStats {
+    text-align: center;
+  }
+  
+  .defaultViewNotice {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .noticeContent {
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .showAllButton {
+    align-self: center;
+  }
+} 

@@ -1180,6 +1180,18 @@
   cursor: pointer;
 }
 
+.formSelect:disabled {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+  border-color: #dee2e6;
+}
+
+.formSelect:disabled:focus {
+  border-color: #dee2e6;
+  box-shadow: none;
+}
+
 .modalFooter {
   display: flex;
   justify-content: flex-end;
@@ -1217,6 +1229,19 @@
 .saveButton:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.saveButton:disabled {
+  background: #9ca3af;
+  color: #ffffff;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.saveButton:disabled:hover {
+  background: #9ca3af;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Password Section */
@@ -2029,4 +2054,373 @@
   background: #2b77cb;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
+}
+
+/* ===== MONTHLY WORK SCHEDULE STYLES ===== */
+
+/* Month/Year Selector */
+.monthYearSelector {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.monthSelect,
+.yearSelect {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: #2d3748;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.monthSelect:hover,
+.yearSelect:hover {
+  border-color: #3182ce;
+}
+
+.monthSelect:focus,
+.yearSelect:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+/* Monthly Schedule Container */
+.monthlyScheduleContainer {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.scheduleHeader {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.scheduleHeader h3 {
+  margin: 0 0 8px 0;
+  color: #2d3748;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.scheduleHeader p {
+  margin: 0;
+  color: #718096;
+  font-size: 14px;
+}
+
+/* Schedule Calendar Grid */
+.scheduleCalendar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+/* Day Card */
+.dayCard {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.dayCard:hover {
+  border-color: #3182ce;
+  box-shadow: 0 4px 8px rgba(49, 130, 206, 0.1);
+  transform: translateY(-1px);
+}
+
+.dayHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dayNumber {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2d3748;
+  background: #3182ce;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editDayButton {
+  background: #edf2f7;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #4a5568;
+  transition: all 0.2s ease;
+}
+
+.editDayButton:hover {
+  background: #3182ce;
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Shifts Container */
+.shiftsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shiftRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border-left: 4px solid #e2e8f0;
+}
+
+.shiftRow:nth-child(1) {
+  border-left-color: #f6ad55; /* Morning - Orange */
+}
+
+.shiftRow:nth-child(2) {
+  border-left-color: #4299e1; /* Afternoon - Blue */
+}
+
+.shiftRow:nth-child(3) {
+  border-left-color: #805ad5; /* Evening - Purple */
+}
+
+.shiftLabel {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 14px;
+  min-width: 80px;
+}
+
+.employeeName {
+  color: #4a5568;
+  font-size: 13px;
+  text-align: right;
+  flex: 1;
+}
+
+/* Empty Schedule State */
+.emptySchedule {
+  background: white;
+  border-radius: 12px;
+  padding: 60px 40px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.emptyIcon {
+  font-size: 4rem;
+  color: #cbd5e0;
+  margin-bottom: 20px;
+}
+
+.emptySchedule h3 {
+  color: #2d3748;
+  margin: 0 0 12px 0;
+  font-size: 1.5rem;
+}
+
+.emptySchedule p {
+  color: #718096;
+  margin: 0 0 30px 0;
+  font-size: 1rem;
+}
+
+.createScheduleButton {
+  background: linear-gradient(135deg, #3182ce 0%, #2b77cb 100%);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.createScheduleButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(49, 130, 206, 0.3);
+}
+
+/* Modal Styles for Monthly Schedule */
+.scheduleInfo {
+  background: #f7fafc;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #3182ce;
+}
+
+.scheduleInfo p {
+  margin: 4px 0;
+  color: #2d3748;
+  font-size: 14px;
+}
+
+.employeeOrderContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 12px;
+  background: #f7fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.employeeCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.employeeCheckbox:hover {
+  border-color: #3182ce;
+  box-shadow: 0 2px 4px rgba(49, 130, 206, 0.1);
+}
+
+.employeeCheckbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.employeeCheckbox label {
+  cursor: pointer;
+  font-weight: 500;
+  color: #2d3748;
+  flex: 1;
+}
+
+.scheduleNote {
+  background: #fffbf0;
+  border: 1px solid #fbd38d;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.noteTitle {
+  font-weight: 600;
+  color: #c05621;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scheduleNote ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #744210;
+}
+
+.scheduleNote li {
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.scheduleNote p {
+  margin: 0;
+  color: #744210;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Responsive Design for Monthly Schedule */
+@media (max-width: 768px) {
+  .scheduleCalendar {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .dayCard {
+    padding: 12px;
+  }
+
+  .monthYearSelector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .monthSelect,
+  .yearSelect {
+    width: 100%;
+  }
+
+  .userManagementActions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+}
+
+/* Employee Roles Container */
+.employeeRolesContainer {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  margin-top: 8px;
+}
+
+.roleItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.roleLabel {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+.roleItem .employeeName {
+  font-weight: 500;
+  color: #007bff;
+  font-size: 14px;
 } 

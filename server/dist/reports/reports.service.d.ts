@@ -5,4 +5,5 @@ export declare class ReportsService {
     constructor(reportRepository: Repository<Report>);
     createReport(id_user: number, content: string): Promise<Report>;
     getAllReports(): Promise<Report[]>;
+    getReportsByUserId(userId: number): Promise<Report[]>;
 }

@@ -38,4 +38,5 @@ export declare class WorkScheduleService {
         totalSchedules: number;
         schedules: WorkSchedule[];
     }>;
+    getEmployeeRoles(): Promise<any>;
 }

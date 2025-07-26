@@ -19,6 +19,7 @@ const work_schedule_module_1 = require("./work-schedule/work-schedule.module");
 const auth_module_1 = require("./auth/auth.module");
 const servers_module_1 = require("./servers/servers.module");
 const reports_module_1 = require("./reports/reports.module");
+const monthly_schedules_module_1 = require("./monthly-schedules/monthly-schedules.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -36,6 +37,7 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             servers_module_1.ServersModule,
             reports_module_1.ReportsModule,
+            monthly_schedules_module_1.MonthlySchedulesModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

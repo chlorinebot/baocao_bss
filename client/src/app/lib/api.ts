@@ -43,6 +43,56 @@ interface UpdateServerData {
   ip?: string;
 }
 
+// Monthly Work Schedule Interfaces (using separate monthly_work_schedules table)
+interface MonthlyWorkSchedule {
+  id: number;
+  month: number; // 1-12
+  year: number;
+  schedule_data: DailySchedule[];
+  created_at: string;
+  updated_at?: string;
+  created_by: number;
+  created_by_name?: string;
+}
+
+interface DailySchedule {
+  date: number; // 1-31
+  shifts: {
+    morning: ShiftAssignment;
+    afternoon: ShiftAssignment;
+    evening: ShiftAssignment;
+  };
+}
+
+interface ShiftAssignment {
+  role: 'A' | 'B' | 'C' | 'D';
+  employee_name: string;
+}
+
+interface CreateMonthlyScheduleData {
+  month: number;
+  year: number;
+  created_by: number;
+}
+
+interface UpdateMonthlyScheduleData {
+  schedule_data: DailySchedule[];
+}
+
+// Employee Roles from work_schedule
+interface EmployeeRoles {
+  employee_a: number;
+  employee_b: number;
+  employee_c: number;
+  employee_d: number;
+  employee_a_name: string;
+  employee_b_name: string;
+  employee_c_name: string;
+  employee_d_name: string;
+  created_date: string;
+  activation_date: string;
+}
+
 interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -175,6 +225,134 @@ class ApiService {
   async getServersCount(): Promise<ApiResponse<{ count: number }>> {
     return this.request<{ count: number }>('/servers/count/total');
   }
+
+  // === MONTHLY WORK SCHEDULE APIs (New System) ===
+
+  // Lấy tất cả phân công hàng tháng
+  async getMonthlySchedules(): Promise<ApiResponse<MonthlyWorkSchedule[]>> {
+    return this.request<MonthlyWorkSchedule[]>('/monthly-schedules');
+  }
+
+  // Lấy phân công theo tháng/năm
+  async getMonthlySchedule(month: number, year: number): Promise<ApiResponse<MonthlyWorkSchedule>> {
+    console.log('🌐 [API] getMonthlySchedule called');
+    console.log('📋 [API] Parameters:', { month, year });
+    
+    try {
+      console.log('🔗 [API] Making GET request to /monthly-schedules/' + year + '/' + month);
+      const response = await fetch(`${API_BASE_URL}/monthly-schedules/${year}/${month}`);
+      
+      console.log('📡 [API] Response status:', response.status);
+      
+      if (!response.ok) {
+        console.error('❌ [API] HTTP error:', response.status, response.statusText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ [API] Response data:', result);
+      
+      // Kiểm tra và đảm bảo schedule_data là array
+      if (result.success && result.data) {
+        console.log('🔍 [API] Checking schedule_data format...');
+        
+        if (typeof result.data.schedule_data === 'string') {
+          try {
+            console.log('🔧 [API] Parsing schedule_data from string...');
+            result.data.schedule_data = JSON.parse(result.data.schedule_data);
+            console.log('✅ [API] Successfully parsed schedule_data');
+          } catch (error) {
+            console.error('❌ [API] Error parsing schedule_data:', error);
+            result.data.schedule_data = [];
+          }
+        }
+        
+        if (!Array.isArray(result.data.schedule_data)) {
+          console.error('❌ [API] schedule_data is not an array, setting empty array');
+          result.data.schedule_data = [];
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('❌ [API] Exception in getMonthlySchedule:', error);
+      return {
+        success: false,
+        error: (error as Error).message || 'Network error'
+      };
+    }
+  }
+
+  // Tạo phân công hàng tháng mới dựa trên vai trò A,B,C,D
+  async createMonthlySchedule(data: CreateMonthlyScheduleData): Promise<ApiResponse<MonthlyWorkSchedule>> {
+    return this.request<MonthlyWorkSchedule>('/monthly-schedules', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Cập nhật phân công hàng tháng
+  async updateMonthlySchedule(id: number, data: UpdateMonthlyScheduleData): Promise<ApiResponse<MonthlyWorkSchedule>> {
+    return this.request<MonthlyWorkSchedule>(`/monthly-schedules/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Xóa phân công hàng tháng
+  async deleteMonthlySchedule(id: number): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return this.request<{ success: boolean; message: string }>(`/monthly-schedules/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Lấy vai trò nhân viên hiện tại từ work_schedule
+  async getEmployeeRoles(): Promise<ApiResponse<EmployeeRoles>> {
+    return this.request<EmployeeRoles>('/work-schedule/roles');
+  }
+
+  // Tạo phân công tự động cho tháng dựa trên vai trò A,B,C,D
+  async generateAutoSchedule(month: number, year: number, createdBy: number, startingRole?: 'A' | 'B' | 'C' | 'D'): Promise<ApiResponse<MonthlyWorkSchedule>> {
+    console.log('🌐 [API] generateAutoSchedule called');
+    console.log('📋 [API] Parameters:', { month, year, createdBy, startingRole });
+    
+    try {
+      const requestBody = {
+        month,
+        year,
+        created_by: createdBy,
+        starting_role: startingRole
+      };
+      console.log('📤 [API] Request body:', requestBody);
+      console.log('🔗 [API] Making POST request to /monthly-schedules/auto-generate');
+      
+      const response = await fetch(`${API_BASE_URL}/monthly-schedules/auto-generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('📡 [API] Response status:', response.status);
+      console.log('📡 [API] Response headers:', response.headers);
+      
+      if (!response.ok) {
+        console.error('❌ [API] HTTP error:', response.status, response.statusText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ [API] Response data:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [API] Exception in generateAutoSchedule:', error);
+      return {
+        success: false,
+        error: (error as Error).message || 'Network error'
+      };
+    }
+  }
 }
 
 export const apiService = new ApiService();
@@ -185,5 +363,11 @@ export type {
   Server, 
   CreateServerData, 
   UpdateServerData, 
-  ApiResponse 
+  ApiResponse,
+  MonthlyWorkSchedule,
+  DailySchedule,
+  ShiftAssignment,
+  CreateMonthlyScheduleData,
+  UpdateMonthlyScheduleData,
+  EmployeeRoles
 }; 

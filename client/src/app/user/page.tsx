@@ -29,11 +29,26 @@ interface UserShift {
   scheduleId: number | null;
 }
 
+interface Report {
+  id: number;
+  id_user: number;
+  content: string;
+  created_at: string;
+}
+
 export default function UserPage() {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userShift, setUserShift] = useState<UserShift | null>(null);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [filteredReports, setFilteredReports] = useState<Report[]>([]);
+  const [dateFilter, setDateFilter] = useState({
+    fromDate: '',
+    toDate: ''
+  });
+  const [hasDateFilter, setHasDateFilter] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [currentTime, setCurrentTime] = useState('');
@@ -145,6 +160,140 @@ export default function UserPage() {
     }
   };
 
+  // Hàm lấy lịch sử báo cáo của user
+  const fetchUserReports = async (userId: number) => {
+    setLoadingReports(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/reports?user_id=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReports(data);
+        // Chỉ hiển thị 10 báo cáo mới nhất khi không có bộ lọc
+        setFilteredReports(data.slice(0, 10));
+        // Reset bộ lọc khi load dữ liệu mới
+        setDateFilter({ fromDate: '', toDate: '' });
+        setHasDateFilter(false);
+      } else {
+        console.error('Lỗi khi lấy báo cáo:', response.status);
+        setReports([]);
+        setFilteredReports([]);
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy lịch sử báo cáo:', error);
+      setReports([]);
+      setFilteredReports([]);
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  // Hàm lọc báo cáo theo ngày
+  const filterReportsByDate = () => {
+    const hasFilter = !!(dateFilter.fromDate || dateFilter.toDate);
+    setHasDateFilter(hasFilter);
+
+    if (!hasFilter) {
+      // Không có bộ lọc: chỉ hiển thị 10 báo cáo mới nhất
+      setFilteredReports(reports.slice(0, 10));
+      return;
+    }
+
+    // Có bộ lọc: lọc theo ngày và hiển thị tất cả kết quả
+    const filtered = reports.filter(report => {
+      const reportDate = new Date(report.created_at);
+      const fromDate = dateFilter.fromDate ? new Date(dateFilter.fromDate) : null;
+      const toDate = dateFilter.toDate ? new Date(dateFilter.toDate + 'T23:59:59') : null;
+
+      if (fromDate && toDate) {
+        return reportDate >= fromDate && reportDate <= toDate;
+      } else if (fromDate) {
+        return reportDate >= fromDate;
+      } else if (toDate) {
+        return reportDate <= toDate;
+      }
+      return true;
+    });
+
+    setFilteredReports(filtered);
+  };
+
+  // Hàm xóa bộ lọc
+  const clearDateFilter = () => {
+    setDateFilter({ fromDate: '', toDate: '' });
+    setHasDateFilter(false);
+    setFilteredReports(reports.slice(0, 10));
+  };
+
+  // Hàm hiển thị tất cả báo cáo
+  const showAllReports = () => {
+    setHasDateFilter(true); // Đặt flag để thống kê hiển thị đúng
+    setFilteredReports(reports);
+  };
+
+  // Effect để tự động lọc khi thay đổi bộ lọc
+  useEffect(() => {
+    filterReportsByDate();
+  }, [dateFilter, reports]);
+
+  // Hàm xử lý thay đổi bộ lọc ngày
+  const handleDateFilterChange = (field: 'fromDate' | 'toDate', value: string) => {
+    setDateFilter(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Hàm thiết lập bộ lọc nhanh
+  const setQuickDateFilter = (period: 'today' | 'thisWeek' | 'thisMonth' | 'lastWeek' | 'lastMonth') => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const day = today.getDate();
+    
+    let fromDate = '';
+    let toDate = '';
+
+    switch (period) {
+      case 'today':
+        fromDate = toDate = today.toISOString().split('T')[0];
+        break;
+      case 'thisWeek':
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(day - today.getDay());
+        fromDate = startOfWeek.toISOString().split('T')[0];
+        toDate = today.toISOString().split('T')[0];
+        break;
+      case 'thisMonth':
+        fromDate = new Date(year, month, 1).toISOString().split('T')[0];
+        toDate = today.toISOString().split('T')[0];
+        break;
+      case 'lastWeek':
+        const lastWeekEnd = new Date(today);
+        lastWeekEnd.setDate(day - today.getDay() - 1);
+        const lastWeekStart = new Date(lastWeekEnd);
+        lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
+        fromDate = lastWeekStart.toISOString().split('T')[0];
+        toDate = lastWeekEnd.toISOString().split('T')[0];
+        break;
+      case 'lastMonth':
+        const lastMonth = new Date(year, month - 1, 1);
+        const lastMonthEnd = new Date(year, month, 0);
+        fromDate = lastMonth.toISOString().split('T')[0];
+        toDate = lastMonthEnd.toISOString().split('T')[0];
+        break;
+    }
+
+    setDateFilter({ fromDate, toDate });
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     router.push('/login');
@@ -154,8 +303,34 @@ export default function UserPage() {
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('vi-VN');
+  };
+
   const handleSidebarClick = (section: string) => {
     setActiveSection(section);
+    
+    // Fetch báo cáo khi chuyển sang section report-history
+    if (section === 'report-history' && userInfo) {
+      fetchUserReports(userInfo.id);
+    }
+  };
+
+  const handleViewReport = (reportId: number) => {
+    // Chuyển hướng đến trang xem báo cáo
+    router.push(`/reports/review?id=${reportId}`);
+  };
+
+  const getReportTitle = (content: string, createdAt: string) => {
+    try {
+      const parsedContent = JSON.parse(content);
+      if (parsedContent.date) {
+        return `Báo cáo ngày ${new Date(parsedContent.date).toLocaleDateString('vi-VN')}`;
+      }
+    } catch (e) {
+      // Fallback nếu không parse được content
+    }
+    return `Báo cáo ${formatDate(createdAt)}`;
   };
 
   const handleEditProfile = () => {
@@ -515,44 +690,150 @@ export default function UserPage() {
           {activeSection === 'report-history' && (
             <div className={styles.sectionContent}>
               <h2 className={styles.sectionTitle}>Lịch sử báo cáo</h2>
-              <div className={styles.reportList}>
-                <div className={styles.reportItem}>
-                  <div className={styles.reportInfo}>
-                    <h4 className={styles.reportTitle}>Báo cáo tháng 12/2024</h4>
-                    <p className={styles.reportDate}>Ngày tạo: 15/12/2024</p>
-                    <span className={styles.reportStatus}>Hoàn thành</span>
+              
+              {/* Bộ lọc theo ngày */}
+              <div className={styles.filterSection}>
+                <h3 className={styles.filterTitle}>
+                  <i className="bi bi-funnel" style={{ marginRight: '8px' }}></i>
+                  Lọc theo ngày
+                </h3>
+                <div className={styles.filterControls}>
+                  <div className={styles.dateFilter}>
+                    <div className={styles.dateInput}>
+                      <label className={styles.dateLabel}>Từ ngày:</label>
+                      <input
+                        type="date"
+                        className={styles.dateInputField}
+                        value={dateFilter.fromDate}
+                        onChange={(e) => handleDateFilterChange('fromDate', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.dateInput}>
+                      <label className={styles.dateLabel}>Đến ngày:</label>
+                      <input
+                        type="date"
+                        className={styles.dateInputField}
+                        value={dateFilter.toDate}
+                        onChange={(e) => handleDateFilterChange('toDate', e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className={styles.reportActions}>
-                    <button className={styles.viewButton}>Xem</button>
-                    <button className={styles.editButton}>Sửa</button>
-                    <button className={styles.deleteButton}>Xóa</button>
+                  
+                  {/* Quick filter buttons */}
+                  <div className={styles.quickFilters}>
+                    <span className={styles.quickFilterLabel}>Lọc nhanh:</span>
+                    <div className={styles.quickFilterButtons}>
+                      <button 
+                        className={styles.quickFilterButton}
+                        onClick={() => setQuickDateFilter('today')}
+                      >
+                        Hôm nay
+                      </button>
+                      <button 
+                        className={styles.quickFilterButton}
+                        onClick={() => setQuickDateFilter('thisWeek')}
+                      >
+                        Tuần này
+                      </button>
+                      <button 
+                        className={styles.quickFilterButton}
+                        onClick={() => setQuickDateFilter('thisMonth')}
+                      >
+                        Tháng này
+                      </button>
+                      <button 
+                        className={styles.quickFilterButton}
+                        onClick={() => setQuickDateFilter('lastWeek')}
+                      >
+                        Tuần trước
+                      </button>
+                      <button 
+                        className={styles.quickFilterButton}
+                        onClick={() => setQuickDateFilter('lastMonth')}
+                      >
+                        Tháng trước
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className={styles.reportItem}>
-                  <div className={styles.reportInfo}>
-                    <h4 className={styles.reportTitle}>Báo cáo quý 4/2024</h4>
-                    <p className={styles.reportDate}>Ngày tạo: 01/12/2024</p>
-                    <span className={styles.reportStatus}>Đang xử lý</span>
-                  </div>
-                  <div className={styles.reportActions}>
-                    <button className={styles.viewButton}>Xem</button>
-                    <button className={styles.editButton}>Sửa</button>
-                    <button className={styles.deleteButton}>Xóa</button>
-                  </div>
-                </div>
-                <div className={styles.reportItem}>
-                  <div className={styles.reportInfo}>
-                    <h4 className={styles.reportTitle}>Báo cáo tháng 11/2024</h4>
-                    <p className={styles.reportDate}>Ngày tạo: 30/11/2024</p>
-                    <span className={styles.reportStatus}>Hoàn thành</span>
-                  </div>
-                  <div className={styles.reportActions}>
-                    <button className={styles.viewButton}>Xem</button>
-                    <button className={styles.editButton}>Sửa</button>
-                    <button className={styles.deleteButton}>Xóa</button>
+
+                  <div className={styles.filterActions}>
+                    <button 
+                      className={styles.clearFilterButton}
+                      onClick={clearDateFilter}
+                      disabled={!dateFilter.fromDate && !dateFilter.toDate}
+                    >
+                      <i className="bi bi-x-circle" style={{ marginRight: '4px' }}></i>
+                      Xóa bộ lọc
+                    </button>
+                    <div className={styles.filterStats}>
+                      {hasDateFilter 
+                        ? `Hiển thị ${filteredReports.length} / ${reports.length} báo cáo`
+                        : `Hiển thị ${Math.min(10, reports.length)} báo cáo mới nhất / ${reports.length} tổng`
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* Thông báo hiển thị mặc định */}
+              {!hasDateFilter && reports.length > 10 && (
+                <div className={styles.defaultViewNotice}>
+                  <div className={styles.noticeContent}>
+                    <i className="bi bi-info-circle" style={{ marginRight: '8px' }}></i>
+                    Đang hiển thị 10 báo cáo mới nhất. Sử dụng bộ lọc theo ngày để xem báo cáo cụ thể.
+                  </div>
+                  <button 
+                    className={styles.showAllButton}
+                    onClick={showAllReports}
+                  >
+                    <i className="bi bi-list-ul" style={{ marginRight: '4px' }}></i>
+                    Xem tất cả ({reports.length})
+                  </button>
+                </div>
+              )}
+
+              {loadingReports ? (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.spinner}></div>
+                  <p>Đang tải lịch sử báo cáo...</p>
+                </div>
+              ) : reports.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <i className="bi bi-file-earmark-text" style={{ fontSize: '48px', color: '#ccc', marginBottom: '16px' }}></i>
+                  <p>Bạn chưa có báo cáo nào. Hãy tạo báo cáo mới!</p>
+                  <button 
+                    className={styles.createReportButton}
+                    onClick={() => setActiveSection('create-report')}
+                  >
+                    <i className="bi bi-plus-circle" style={{ marginRight: '4px' }}></i>
+                    Tạo báo cáo mới
+                  </button>
+                </div>
+              ) : filteredReports.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <i className="bi bi-search" style={{ fontSize: '48px', color: '#ccc', marginBottom: '16px' }}></i>
+                  <p>Không tìm thấy báo cáo nào trong khoảng thời gian này.</p>
+                  <p>Hãy thử thay đổi bộ lọc hoặc xóa bộ lọc để xem tất cả báo cáo.</p>
+                </div>
+              ) : (
+                <div className={styles.reportList}>
+                  {filteredReports.map((report) => (
+                    <div key={report.id} className={styles.reportItem}>
+                      <div className={styles.reportInfo}>
+                        <h4 className={styles.reportTitle}>{getReportTitle(report.content, report.created_at)}</h4>
+                        <p className={styles.reportDate}>Ngày tạo: {formatDateTime(report.created_at)}</p>
+                        <span className={styles.reportStatus}>Trạng thái: Hoàn thành</span>
+                      </div>
+                      <div className={styles.reportActions}>
+                        <button className={styles.viewButton} onClick={() => handleViewReport(report.id)}>
+                          <i className="bi bi-eye" style={{ marginRight: '4px' }}></i>
+                          Xem báo cáo
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

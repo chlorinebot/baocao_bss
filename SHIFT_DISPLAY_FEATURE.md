@@ -119,7 +119,7 @@
 
 1. Khởi động server: `npm start` trong thư mục `server`
 2. Khởi động client: `npm run dev` trong thư mục `client`
-3. Truy cập: `http://localhost:3001/user`
+3. Truy cập: `http://localhost:3000/user`
 4. Đăng nhập với tài khoản được phân công
 5. Kiểm tra navbar sẽ hiển thị ca trực hiện tại
 

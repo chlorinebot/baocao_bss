@@ -86,20 +86,6 @@ export default function ReportReview() {
   const [alertData, setAlertData] = useState<AlertData>({});
   const [reportDate, setReportDate] = useState<string>('');
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  };
-
-  const scrollToBottom = () => {
-    window.scrollTo({
-      top: document.documentElement.scrollHeight,
-      behavior: 'smooth'
-    });
-  };
-
   useEffect(() => {
     loadReportData();
   }, []);
@@ -370,24 +356,6 @@ export default function ReportReview() {
               <p><strong>Người trực:</strong> {getFullName(userInfo)}</p>
               <p><strong>Ngày:</strong> {reportDate}</p>
             </div>
-          </div>
-
-          {/* Scroll Buttons */}
-          <div className="scroll-buttons">
-            <button 
-              className="scroll-top-btn" 
-              onClick={scrollToTop}
-              title="Lên đầu trang"
-            >
-              <i className="bi bi-arrow-up"></i>
-            </button>
-            <button 
-              className="scroll-bottom-btn" 
-              onClick={scrollToBottom}
-              title="Xuống cuối trang"
-            >
-              <i className="bi bi-arrow-down"></i>
-            </button>
           </div>
 
           {/* Apache APISIX Section */}

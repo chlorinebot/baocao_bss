@@ -10,6 +10,7 @@ import { WorkScheduleModule } from './work-schedule/work-schedule.module';
 import { AuthModule } from './auth/auth.module';
 import { ServersModule } from './servers/servers.module';
 import { ReportsModule } from './reports/reports.module';
+import { MonthlySchedulesModule } from './monthly-schedules/monthly-schedules.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ReportsModule } from './reports/reports.module';
     AuthModule,
     ServersModule,
     ReportsModule,
+    MonthlySchedulesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -37,6 +37,25 @@ export class WorkScheduleController {
     }
   }
 
+  // Lấy vai trò nhân viên hiện tại (A, B, C, D)
+  @Get('roles')
+  async getEmployeeRoles() {
+    try {
+      const roles = await this.workScheduleService.getEmployeeRoles();
+      return {
+        success: true,
+        message: 'Lấy vai trò nhân viên thành công',
+        data: roles
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Lỗi khi lấy vai trò nhân viên',
+        error: error.message
+      };
+    }
+  }
+
   // Lấy phân công theo ngày
   @Get('date/:date')
   async findByDate(@Param('date') date: string) {

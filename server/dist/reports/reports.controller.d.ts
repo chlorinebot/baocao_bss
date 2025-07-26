@@ -6,5 +6,7 @@ export declare class ReportsController {
         id_user: number;
         content: string;
     }): Promise<import("./report.entity").Report>;
-    getAllReports(): Promise<import("./report.entity").Report[]>;
+    getAllReports(userId?: string): Promise<import("./report.entity").Report[] | {
+        error: string;
+    }>;
 }

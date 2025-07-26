@@ -29,6 +29,12 @@ let ReportsService = class ReportsService {
     async getAllReports() {
         return this.reportRepository.find({ order: { created_at: 'DESC' } });
     }
+    async getReportsByUserId(userId) {
+        return this.reportRepository.find({
+            where: { id_user: userId },
+            order: { created_at: 'DESC' }
+        });
+    }
 };
 exports.ReportsService = ReportsService;
 exports.ReportsService = ReportsService = __decorate([

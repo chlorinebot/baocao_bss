@@ -37,6 +37,23 @@ let WorkScheduleController = class WorkScheduleController {
             };
         }
     }
+    async getEmployeeRoles() {
+        try {
+            const roles = await this.workScheduleService.getEmployeeRoles();
+            return {
+                success: true,
+                message: 'Lấy vai trò nhân viên thành công',
+                data: roles
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                message: 'Lỗi khi lấy vai trò nhân viên',
+                error: error.message
+            };
+        }
+    }
     async findByDate(date) {
         try {
             const schedules = await this.workScheduleService.findByDate(date);
@@ -197,6 +214,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], WorkScheduleController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('roles'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], WorkScheduleController.prototype, "getEmployeeRoles", null);
 __decorate([
     (0, common_1.Get)('date/:date'),
     __param(0, (0, common_1.Param)('date')),

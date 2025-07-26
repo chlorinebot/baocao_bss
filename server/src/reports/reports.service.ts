@@ -18,4 +18,11 @@ export class ReportsService {
   async getAllReports(): Promise<Report[]> {
     return this.reportRepository.find({ order: { created_at: 'DESC' } });
   }
+
+  async getReportsByUserId(userId: number): Promise<Report[]> {
+    return this.reportRepository.find({ 
+      where: { id_user: userId },
+      order: { created_at: 'DESC' } 
+    });
+  }
 } 

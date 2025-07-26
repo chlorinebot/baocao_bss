@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, Query } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 
 @Controller('reports')
@@ -12,7 +12,14 @@ export class ReportsController {
   }
 
   @Get()
-  async getAllReports() {
+  async getAllReports(@Query('user_id') userId?: string) {
+    if (userId) {
+      const userIdNumber = parseInt(userId, 10);
+      if (isNaN(userIdNumber)) {
+        return { error: 'Invalid user_id parameter' };
+      }
+      return this.reportsService.getReportsByUserId(userIdNumber);
+    }
     return this.reportsService.getAllReports();
   }
 } 

@@ -13,6 +13,17 @@ export declare class WorkScheduleController {
         error: any;
         data?: undefined;
     }>;
+    getEmployeeRoles(): Promise<{
+        success: boolean;
+        message: string;
+        data: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        error: any;
+        data?: undefined;
+    }>;
     findByDate(date: string): Promise<{
         success: boolean;
         message: string;

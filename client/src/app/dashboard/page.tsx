@@ -4,7 +4,18 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import styles from './dashboard.module.css';
-import { apiService, Server, CreateServerData, UpdateServerData } from '../lib/api';
+import { 
+  apiService, 
+  Server, 
+  CreateServerData, 
+  UpdateServerData,
+  MonthlyWorkSchedule,
+  DailySchedule,
+  ShiftAssignment,
+  CreateMonthlyScheduleData,
+  UpdateMonthlyScheduleData,
+  EmployeeRoles
+} from '../lib/api';
 
 interface User {
   id: number;
@@ -175,7 +186,50 @@ export default function DashboardPage() {
   const [editServerModalError, setEditServerModalError] = useState('');
   const [deleteServerModalError, setDeleteServerModalError] = useState('');
 
+  // Monthly Work Schedule States (Updated for new system)
+  const [monthlySchedules, setMonthlySchedules] = useState<MonthlyWorkSchedule[]>([]);
+  const [currentMonthlySchedule, setCurrentMonthlySchedule] = useState<MonthlyWorkSchedule | null>(null);
+  const [monthlySchedulesLoading, setMonthlySchedulesLoading] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [employeeRoles, setEmployeeRoles] = useState<EmployeeRoles | null>(null);
+  const [employeeRolesLoading, setEmployeeRolesLoading] = useState(false);
+  
+  // Monthly Schedule Modal States
+  const [showCreateMonthlyScheduleModal, setShowCreateMonthlyScheduleModal] = useState(false);
+  const [showEditDayScheduleModal, setShowEditDayScheduleModal] = useState(false);
+  const [editingDaySchedule, setEditingDaySchedule] = useState<DailySchedule | null>(null);
+  const [editingDayIndex, setEditingDayIndex] = useState<number>(-1);
+  const [createMonthlyScheduleError, setCreateMonthlyScheduleError] = useState('');
+  const [editDayScheduleError, setEditDayScheduleError] = useState('');
+  const [startingRole, setStartingRole] = useState<'A' | 'B' | 'C' | 'D'>('A'); // Vai trò bắt đầu ca sáng ngày 1
+  const [forceUpdate, setForceUpdate] = useState(0); // Force re-render
+  const [editDayScheduleData, setEditDayScheduleData] = useState<DailySchedule>({
+    date: 1,
+    shifts: {
+      morning: { role: 'A', employee_name: '' },
+      afternoon: { role: 'B', employee_name: '' },
+      evening: { role: 'C', employee_name: '' }
+    }
+  });
+  const [currentWorkSchedule, setCurrentWorkSchedule] = useState<any>(null);
+
   const router = useRouter();
+
+  // Debug useEffect for currentMonthlySchedule
+  useEffect(() => {
+    if (currentMonthlySchedule) {
+      console.log('🔍 [Frontend Debug] currentMonthlySchedule changed:', currentMonthlySchedule);
+      console.log('🔍 [Frontend Debug] schedule_data type:', typeof currentMonthlySchedule.schedule_data);
+      console.log('🔍 [Frontend Debug] schedule_data content:', currentMonthlySchedule.schedule_data);
+      console.log('🔍 [Frontend Debug] is schedule_data array?', Array.isArray(currentMonthlySchedule.schedule_data));
+      if (Array.isArray(currentMonthlySchedule.schedule_data)) {
+        console.log('🔍 [Frontend Debug] schedule_data length:', currentMonthlySchedule.schedule_data.length);
+      }
+    } else {
+      console.log('🔍 [Frontend Debug] currentMonthlySchedule is null');
+    }
+  }, [currentMonthlySchedule]);
 
   const hideToast = useCallback(() => {
     setToast(prev => ({ ...prev, isHiding: true }));
@@ -399,7 +453,7 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  const handleMenuClick = (menuId: string) => {
+  const handleMenuClick = async (menuId: string) => {
     setActiveMenu(menuId);
     if (menuId === 'users') {
       fetchUsers();
@@ -407,6 +461,15 @@ export default function DashboardPage() {
       fetchWorkSchedules();
     } else if (menuId === 'server-management') {
       fetchServers();
+    } else if (menuId === 'monthly-work-schedule') {
+      try {
+        setCurrentMonthlySchedule(null); // Reset state
+        await fetchEmployeeRoles(); // Fetch vai trò nhân viên từ work_schedule
+        fetchMonthlySchedule(selectedMonth, selectedYear);
+      } catch (error) {
+        console.error('Error loading monthly work schedule:', error);
+        showToast('Có lỗi khi tải ca làm việc hàng tháng', 'error');
+      }
     }
   };
 
@@ -1325,6 +1388,329 @@ export default function DashboardPage() {
     setDeleteServerModalError('');
   };
 
+  // === MONTHLY WORK SCHEDULE FUNCTIONS ===
+
+  // Fetch monthly schedules
+  const fetchMonthlySchedules = useCallback(async () => {
+    try {
+      setMonthlySchedulesLoading(true);
+      const response = await apiService.getMonthlySchedules();
+      if (response.success && response.data) {
+        setMonthlySchedules(response.data);
+      } else {
+        showToast('Không thể tải danh sách phân công hàng tháng', 'error');
+      }
+    } catch (error) {
+      console.error('Error fetching monthly schedules:', error);
+      showToast('Lỗi kết nối server', 'error');
+    } finally {
+      setMonthlySchedulesLoading(false);
+    }
+  }, []);
+
+  // Fetch specific monthly schedule - VIẾT LẠI HOÀN TOÀN
+  const fetchMonthlySchedule = useCallback(async (month: number, year: number) => {
+    console.log('🔍 ==========================================');
+    console.log('🔍 [Frontend] BẮT ĐẦU fetchMonthlySchedule');
+    console.log(`🔍 [Frontend] Input params: month=${month}, year=${year}`);
+    console.log('🔍 ==========================================');
+    
+    try {
+      // Gọi API
+      console.log('🔄 [Frontend] Calling API...');
+      const response = await apiService.getMonthlySchedule(month, year);
+      
+      console.log('📡 [Frontend] ===== API RESPONSE DEBUG =====');
+      console.log('📡 [Frontend] Response:', JSON.stringify(response, null, 2));
+      console.log('📡 [Frontend] Response type:', typeof response);
+      console.log('📡 [Frontend] Response.success:', response?.success);
+      console.log('📡 [Frontend] Response.data:', response?.data);
+
+      if (!response) {
+        console.error('❌ [Frontend] RESPONSE IS NULL');
+        setCurrentMonthlySchedule(null);
+        return;
+      }
+
+      if (response.success && response.data) {
+        console.log('✅ [Frontend] API SUCCESS - Processing data...');
+        console.log('📊 [Frontend] Raw data:', JSON.stringify(response.data, null, 2));
+
+        let finalData = response.data;
+
+        // Debug schedule_data chi tiết
+        console.log('🔍 [Frontend] ===== SCHEDULE_DATA DEBUG =====');
+        console.log('🔍 [Frontend] schedule_data:', finalData.schedule_data);
+        console.log('🔍 [Frontend] Type:', typeof finalData.schedule_data);
+        console.log('🔍 [Frontend] Is array:', Array.isArray(finalData.schedule_data));
+        console.log('🔍 [Frontend] Is null:', finalData.schedule_data === null);
+        console.log('🔍 [Frontend] Is undefined:', finalData.schedule_data === undefined);
+
+        // LOGIC MỚI - KHÔNG PARSE JSON NỮA
+        // Backend đã parse rồi, chỉ cần kiểm tra và đảm bảo là array
+        if (finalData.schedule_data) {
+          if (Array.isArray(finalData.schedule_data)) {
+            console.log('✅ [Frontend] Already an array with length:', finalData.schedule_data.length);
+            console.log('✅ [Frontend] First item:', JSON.stringify(finalData.schedule_data[0]));
+          } else if (typeof finalData.schedule_data === 'string') {
+            try {
+              console.log('🔧 [Frontend] Parsing JSON string...');
+              console.log('🔧 [Frontend] Raw string:', (finalData.schedule_data as string).substring(0, 100));
+              finalData.schedule_data = JSON.parse(finalData.schedule_data);
+              console.log('✅ [Frontend] JSON parsed successfully, length:', finalData.schedule_data.length);
+            } catch (parseError) {
+              console.error('❌ [Frontend] JSON parse failed:', parseError);
+              finalData.schedule_data = [];
+            }
+          } else {
+            console.error('❌ [Frontend] schedule_data is not array or string, type:', typeof finalData.schedule_data);
+            finalData.schedule_data = [];
+          }
+        } else {
+          console.error('❌ [Frontend] schedule_data is null/undefined');
+          finalData.schedule_data = [];
+        }
+
+        console.log('🎯 [Frontend] FINAL DATA TO SET:');
+        console.log('🎯 [Frontend] ID:', finalData.id);
+        console.log('🎯 [Frontend] Month/Year:', finalData.month + '/' + finalData.year);
+        console.log('🎯 [Frontend] schedule_data type:', typeof finalData.schedule_data);
+        console.log('🎯 [Frontend] schedule_data is array:', Array.isArray(finalData.schedule_data));
+        console.log('🎯 [Frontend] schedule_data length:', Array.isArray(finalData.schedule_data) ? finalData.schedule_data.length : 'NOT_ARRAY');
+        console.log('🎯 [Frontend] schedule_data content:', JSON.stringify(finalData.schedule_data));
+        
+        setCurrentMonthlySchedule(finalData);
+        console.log('✅ [Frontend] State set successfully');
+        
+      } else {
+        console.log('⚠️ [Frontend] API returned no data or error');
+        console.log('⚠️ [Frontend] Success:', response.success);
+        console.log('⚠️ [Frontend] Error:', response.error);
+        setCurrentMonthlySchedule(null);
+      }
+
+      console.log('🔍 ==========================================');
+      console.log('🔍 [Frontend] COMPLETED fetchMonthlySchedule');
+      console.log('🔍 ==========================================');
+      
+    } catch (error) {
+      console.error('🔍 ==========================================');
+      console.error('❌ [Frontend] ERROR in fetchMonthlySchedule');
+      console.error('❌ [Frontend] Error:', error);
+      console.error('🔍 ==========================================');
+      setCurrentMonthlySchedule(null);
+    }
+  }, []);
+
+  // Fetch employee roles
+  const fetchEmployeeRoles = useCallback(async () => {
+    try {
+      setEmployeeRolesLoading(true);
+      const response = await apiService.getEmployeeRoles();
+      
+      if (response && response.success && response.data) {
+        // Validate data structure before setting
+        if (response.data && typeof response.data === 'object' && response.data.employee_a_name) {
+          setEmployeeRoles(response.data); // Set data, not response
+        } else if (response.data && (response.data as any).data && (response.data as any).data.employee_a_name) {
+          // In case data is nested
+          setEmployeeRoles((response.data as any).data);
+        } else {
+          console.error('❌ Invalid data structure:', response.data);
+          setEmployeeRoles(null);
+        }
+        
+        // Force re-render immediately
+        setForceUpdate(prev => prev + 1);
+      } else {
+        console.warn('⚠️ No employee roles found:', response?.error || 'No data');
+        setEmployeeRoles(null);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching employee roles:', error);
+      setEmployeeRoles(null);
+      showToast('Không thể tải vai trò nhân viên', 'error');
+    } finally {
+      setEmployeeRolesLoading(false);
+    }
+  }, [showToast]);
+
+  // Debug useEffect để theo dõi employeeRoles state
+  /* 
+  useEffect(() => {
+    console.log('🔄 employeeRoles state changed:', employeeRoles);
+    if (employeeRoles) {
+      console.log('📋 Employee names from state:', {
+        A: employeeRoles.employee_a_name,
+        B: employeeRoles.employee_b_name,
+        C: employeeRoles.employee_c_name,
+        D: employeeRoles.employee_d_name
+      });
+      console.log('🔍 State keys:', Object.keys(employeeRoles));
+      console.log('🔍 State type:', typeof employeeRoles);
+    }
+  }, [employeeRoles]);
+  */
+
+  // Handle month/year change
+  const handleMonthYearChange = (month: number, year: number) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+    setCurrentMonthlySchedule(null); // Reset state trước khi fetch
+    fetchMonthlySchedule(month, year);
+  };
+
+  // Show create monthly schedule modal
+  const handleShowCreateMonthlyScheduleModal = () => {
+    setShowCreateMonthlyScheduleModal(true);
+    setCreateMonthlyScheduleError('');
+    setStartingRole('A'); // Reset về A
+    fetchEmployeeRoles(); // Fetch employee roles khi mở modal
+  };
+
+  // Close create monthly schedule modal
+  const handleCloseCreateMonthlyScheduleModal = () => {
+    setShowCreateMonthlyScheduleModal(false);
+    setCreateMonthlyScheduleError('');
+    setStartingRole('A'); // Reset về A
+  };
+
+  // Generate automatic schedule
+  const handleGenerateAutoSchedule = async () => {
+    console.log('🎯 [Frontend] handleGenerateAutoSchedule called');
+    console.log('📋 [Frontend] Parameters:', { selectedMonth, selectedYear, startingRole });
+    
+    try {
+      console.log('🔄 [Frontend] Calling API generateAutoSchedule...');
+      const response = await apiService.generateAutoSchedule(
+        selectedMonth,
+        selectedYear,
+        1, // created_by - should be current user ID
+        startingRole // Thêm tham số startingRole
+      );
+
+      console.log('✅ [Frontend] API response:', response);
+
+      if (response.success) {
+        console.log('🎉 [Frontend] API returned success!');
+        showToast('Tạo phân công tự động thành công!', 'success');
+        handleCloseCreateMonthlyScheduleModal();
+        
+        console.log('🔄 [Frontend] Fetching updated schedule data...');
+        // Refresh data để hiển thị phân công mới
+        await fetchMonthlySchedule(selectedMonth, selectedYear);
+        fetchMonthlySchedules();
+        console.log('✅ [Frontend] Data refresh completed');
+      } else {
+        console.error('❌ [Frontend] API returned error:', response.error);
+        setCreateMonthlyScheduleError(response.error || 'Có lỗi xảy ra khi tạo phân công');
+      }
+    } catch (error) {
+      console.error('❌ [Frontend] Exception in handleGenerateAutoSchedule:', error);
+      setCreateMonthlyScheduleError('Lỗi kết nối server');
+    }
+  };
+
+  // Edit day schedule
+  const handleEditDaySchedule = (daySchedule: DailySchedule, dayIndex: number) => {
+    setEditingDaySchedule(daySchedule);
+    setEditingDayIndex(dayIndex);
+    setEditDayScheduleData({...daySchedule});
+    setEditDayScheduleError('');
+    setShowEditDayScheduleModal(true);
+  };
+
+  // Close edit day schedule modal
+  const handleCloseEditDayScheduleModal = () => {
+    setShowEditDayScheduleModal(false);
+    setEditingDaySchedule(null);
+    setEditingDayIndex(-1);
+    setEditDayScheduleError('');
+  };
+
+  // Save day schedule
+  const handleSaveDaySchedule = async () => {
+    if (!currentMonthlySchedule) return;
+
+    try {
+      const updatedScheduleData = [...currentMonthlySchedule.schedule_data];
+      updatedScheduleData[editingDayIndex] = editDayScheduleData;
+
+      const response = await apiService.updateMonthlySchedule(currentMonthlySchedule.id, {
+        schedule_data: updatedScheduleData
+      });
+
+      if (response.success) {
+        showToast('Cập nhật ca làm việc thành công!', 'success');
+        handleCloseEditDayScheduleModal();
+        fetchMonthlySchedule(selectedMonth, selectedYear);
+      } else {
+        setEditDayScheduleError(response.error || 'Có lỗi xảy ra khi cập nhật');
+      }
+    } catch (error) {
+      console.error('Error saving day schedule:', error);
+      setEditDayScheduleError('Lỗi kết nối server');
+    }
+  };
+
+  // Delete monthly schedule
+  const handleDeleteMonthlySchedule = async () => {
+    if (!currentMonthlySchedule) return;
+
+    if (!confirm('Bạn có chắc chắn muốn xóa phân công này?')) return;
+
+    try {
+      const response = await apiService.deleteMonthlySchedule(currentMonthlySchedule.id);
+      if (response.success) {
+        showToast('Xóa phân công thành công!', 'success');
+        setCurrentMonthlySchedule(null);
+        fetchMonthlySchedules();
+      } else {
+        showToast(response.error || 'Có lỗi xảy ra khi xóa phân công', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting monthly schedule:', error);
+      showToast('Lỗi kết nối server', 'error');
+    }
+  };
+
+  // Get employee name by role
+  const getEmployeeNameByRole = (role: 'A' | 'B' | 'C' | 'D'): string => {
+    if (!employeeRoles) return 'Chưa phân công';
+    
+    switch (role) {
+      case 'A': return employeeRoles.employee_a_name || 'Chưa phân công';
+      case 'B': return employeeRoles.employee_b_name || 'Chưa phân công';
+      case 'C': return employeeRoles.employee_c_name || 'Chưa phân công';
+      case 'D': return employeeRoles.employee_d_name || 'Chưa phân công';
+      default: return 'Không xác định';
+    }
+  };
+
+  // Get days in month
+  const getDaysInMonth = (month: number, year: number): number => {
+    return new Date(year, month, 0).getDate();
+  };
+
+  // Get shift name in Vietnamese
+  const getShiftName = (shift: 'morning' | 'afternoon' | 'evening'): string => {
+    switch (shift) {
+      case 'morning': return 'Ca sáng';
+      case 'afternoon': return 'Ca chiều';
+      case 'evening': return 'Ca tối';
+      default: return '';
+    }
+  };
+
+  // Helper function to get next role in rotation (theo logic rotation ngược)
+  const getNextRole = (startRole: 'A' | 'B' | 'C' | 'D', steps: number): 'A' | 'B' | 'C' | 'D' => {
+    const roles: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+    const startIndex = roles.indexOf(startRole);
+    // Logic rotation ngược: -steps thay vì +steps
+    const nextIndex = (startIndex - steps + 4) % 4;
+    return roles[nextIndex];
+  };
+
   const renderContent = () => {
     switch (activeMenu) {
       case 'statistics':
@@ -1900,6 +2286,268 @@ export default function DashboardPage() {
             </div>
           </div>
         );
+      case 'monthly-work-schedule':
+        return (
+          <div className={styles.contentSection}>
+            <div className={styles.userManagementHeader}>
+              <h2 className={styles.sectionTitle}>Ca làm việc hàng tháng</h2>
+              <div className={styles.userManagementActions}>
+                <div className={styles.monthYearSelector}>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => handleMonthYearChange(Number(e.target.value), selectedYear)}
+                    className={styles.monthSelect}
+                  >
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        Tháng {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => handleMonthYearChange(selectedMonth, Number(e.target.value))}
+                    className={styles.yearSelect}
+                  >
+                    {Array.from({ length: 5 }, (_, i) => {
+                      const year = new Date().getFullYear() - 2 + i;
+                      return (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                
+                {currentMonthlySchedule && currentMonthlySchedule.schedule_data && currentMonthlySchedule.schedule_data.length > 0 ? (
+                  <button 
+                    className={styles.deleteButton}
+                    onClick={handleDeleteMonthlySchedule}
+                    title="Xóa phân công tháng này"
+                  >
+                    <i className="bi bi-trash3"></i>
+                    Xóa phân công
+                  </button>
+                ) : (
+                  <button 
+                    className={styles.addButton}
+                    onClick={handleShowCreateMonthlyScheduleModal}
+                  >
+                    <i className="bi bi-plus-circle"></i>
+                    Tạo phân công tháng
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {monthlySchedulesLoading ? (
+              <div className={styles.loading}>
+                <div className={styles.spinner}></div>
+                <p>Đang tải phân công tháng {selectedMonth}/{selectedYear}...</p>
+              </div>
+            ) : currentMonthlySchedule ? (
+              <div className={styles.monthlyScheduleContainer}>
+                <div className={styles.scheduleHeader}>
+                  <h3>Phân công tháng {selectedMonth}/{selectedYear}</h3>
+                  <p>Tạo ngày: {formatDateTime(currentMonthlySchedule.created_at)}</p>
+                  <p>ID: {currentMonthlySchedule.id}</p>
+                </div>
+                
+                {/* DEBUG INFO - hiển thị thông tin debug */}
+                <div style={{
+                  background: '#f0f8ff', 
+                  padding: '10px', 
+                  margin: '10px 0', 
+                  border: '1px solid #007bff',
+                  borderRadius: '5px',
+                  fontSize: '12px'
+                }}>
+                  <strong>🔍 DEBUG INFO:</strong><br/>
+                  • schedule_data type: {typeof currentMonthlySchedule.schedule_data}<br/>
+                  • schedule_data is array: {Array.isArray(currentMonthlySchedule.schedule_data) ? 'YES' : 'NO'}<br/>
+                  • schedule_data length: {Array.isArray(currentMonthlySchedule.schedule_data) ? (currentMonthlySchedule.schedule_data as any[]).length : 'NOT_ARRAY'}<br/>
+                  • schedule_data exists: {currentMonthlySchedule.schedule_data ? 'YES' : 'NO'}<br/>
+                  • Raw data: {JSON.stringify(currentMonthlySchedule.schedule_data)?.substring(0, 100)}...
+                </div>
+                
+                <div className={styles.scheduleCalendar}>
+                  {/* ĐIỀU KIỆN RENDER MỚI - ĐƠN GIẢN HÓA */}
+                  {currentMonthlySchedule?.schedule_data && 
+                   Array.isArray(currentMonthlySchedule.schedule_data) && 
+                   currentMonthlySchedule.schedule_data.length > 0 ? (
+                    <>
+                      <div style={{
+                        background: '#d4edda', 
+                        padding: '10px', 
+                        margin: '10px 0',
+                        border: '1px solid #28a745',
+                        borderRadius: '5px'
+                      }}>
+                        ✅ <strong>Tìm thấy {(currentMonthlySchedule.schedule_data as any[]).length} ngày phân công!</strong>
+                      </div>
+                      
+                      {/* RENDER TỪNG NGÀY - ĐƠN GIẢN HÓA */}
+                      {currentMonthlySchedule.schedule_data.map((daySchedule: any, index: number) => {
+                        console.log(`🔍 [Render] Rendering day ${index + 1}:`, daySchedule);
+                        
+                        if (!daySchedule || !daySchedule.shifts) {
+                          console.error(`❌ [Render] Invalid day data at index ${index}:`, daySchedule);
+                          return (
+                            <div key={`error-day-${index}`} style={{
+                              background: '#f8d7da',
+                              padding: '10px',
+                              margin: '5px 0',
+                              borderRadius: '5px',
+                              border: '1px solid #dc3545'
+                            }}>
+                              Lỗi dữ liệu ngày {index + 1}
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <div key={`day-${daySchedule?.date || index}`} className={styles.dayCard} style={{
+                            border: '2px solid #007bff',
+                            margin: '10px',
+                            padding: '15px',
+                            borderRadius: '8px',
+                            backgroundColor: '#f8f9fa'
+                          }}>
+                            <div className={styles.dayHeader}>
+                              <span className={styles.dayNumber} style={{
+                                fontSize: '18px',
+                                fontWeight: 'bold',
+                                color: '#007bff'
+                              }}>
+                                Ngày {daySchedule?.date || (index + 1)}
+                              </span>
+                              <button 
+                                className={styles.editDayButton}
+                                onClick={() => handleEditDaySchedule(daySchedule, index)}
+                                title="Chỉnh sửa ca làm việc ngày này"
+                                style={{
+                                  background: '#28a745',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '5px 10px',
+                                  borderRadius: '4px'
+                                }}
+                              >
+                                <i className="bi bi-pencil"></i> Sửa
+                              </button>
+                            </div>
+                            
+                            <div className={styles.shiftsContainer} style={{ marginTop: '10px' }}>
+                              {/* RENDER CA SÁNG */}
+                              <div className={styles.shiftRow} style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                padding: '8px',
+                                margin: '5px 0',
+                                backgroundColor: '#fff3cd',
+                                borderRadius: '4px',
+                                border: '1px solid #ffeaa7'
+                              }}>
+                                <span className={styles.shiftLabel} style={{ fontWeight: 'bold' }}>
+                                  ☀️ Ca sáng:
+                                </span>
+                                <span className={styles.employeeName}>
+                                  {daySchedule?.shifts?.morning?.employee_name || 'Chưa phân công'}
+                                </span>
+                                <span className={styles.roleInfo} style={{ color: '#666' }}>
+                                  (Vai trò: {daySchedule?.shifts?.morning?.role || 'N/A'})
+                                </span>
+                              </div>
+                              
+                              {/* RENDER CA CHIỀU */}
+                              <div className={styles.shiftRow} style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                padding: '8px',
+                                margin: '5px 0',
+                                backgroundColor: '#d1ecf1',
+                                borderRadius: '4px',
+                                border: '1px solid #bee5eb'
+                              }}>
+                                <span className={styles.shiftLabel} style={{ fontWeight: 'bold' }}>
+                                  🌅 Ca chiều:
+                                </span>
+                                <span className={styles.employeeName}>
+                                  {daySchedule?.shifts?.afternoon?.employee_name || 'Chưa phân công'}
+                                </span>
+                                <span className={styles.roleInfo} style={{ color: '#666' }}>
+                                  (Vai trò: {daySchedule?.shifts?.afternoon?.role || 'N/A'})
+                                </span>
+                              </div>
+                              
+                              {/* RENDER CA TỐI */}
+                              <div className={styles.shiftRow} style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                padding: '8px',
+                                margin: '5px 0',
+                                backgroundColor: '#d4edda',
+                                borderRadius: '4px',
+                                border: '1px solid #c3e6cb'
+                              }}>
+                                <span className={styles.shiftLabel} style={{ fontWeight: 'bold' }}>
+                                  🌙 Ca tối:
+                                </span>
+                                <span className={styles.employeeName}>
+                                  {daySchedule?.shifts?.evening?.employee_name || 'Chưa phân công'}
+                                </span>
+                                <span className={styles.roleInfo} style={{ color: '#666' }}>
+                                  (Vai trò: {daySchedule?.shifts?.evening?.role || 'N/A'})
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  ) : (
+                    <div className={styles.emptySchedule}>
+                      <div style={{
+                        background: '#f8d7da', 
+                        padding: '15px', 
+                        margin: '10px 0',
+                        border: '1px solid #dc3545',
+                        borderRadius: '5px'
+                      }}>
+                        <h4>❌ Không có dữ liệu phân công hiển thị</h4>
+                        <p><strong>Debug info:</strong></p>
+                        <ul style={{textAlign: 'left', marginLeft: '20px'}}>
+                          <li>currentMonthlySchedule exists: {currentMonthlySchedule ? 'YES' : 'NO'}</li>
+                          <li>schedule_data exists: {currentMonthlySchedule?.schedule_data ? 'YES' : 'NO'}</li>
+                          <li>schedule_data type: {typeof currentMonthlySchedule?.schedule_data}</li>
+                          <li>schedule_data is array: {Array.isArray(currentMonthlySchedule?.schedule_data) ? 'YES' : 'NO'}</li>
+                          <li>schedule_data length: {Array.isArray(currentMonthlySchedule?.schedule_data) ? (currentMonthlySchedule.schedule_data as any[]).length : 'NOT_ARRAY'}</li>
+                        </ul>
+                        <p><strong>Kiểm tra Console để thấy chi tiết lỗi!</strong></p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className={styles.emptySchedule}>
+                <div className={styles.emptyIcon}>
+                  <i className="bi bi-calendar-x"></i>
+                </div>
+                <h3>Chưa có phân công cho tháng {selectedMonth}/{selectedYear}</h3>
+                <p>Tạo phân công tự động để bắt đầu quản lý ca làm việc hàng tháng</p>
+                <button 
+                  className={styles.createScheduleButton}
+                  onClick={handleShowCreateMonthlyScheduleModal}
+                >
+                  <i className="bi bi-plus-circle"></i>
+                  Tạo phân công tháng
+                </button>
+              </div>
+            )}
+          </div>
+        );
       default:
         return null;
     }
@@ -1962,6 +2610,14 @@ export default function DashboardPage() {
             >
               <span className={styles.menuIcon}><i className="bi bi-people-fill"></i></span>
               <span className={styles.menuText}>Quản lý phân công</span>
+            </button>
+            
+            <button 
+              className={`${styles.menuItem} ${activeMenu === 'monthly-work-schedule' ? styles.active : ''}`}
+              onClick={() => handleMenuClick('monthly-work-schedule')}
+            >
+              <span className={styles.menuIcon}><i className="bi bi-calendar3"></i></span>
+              <span className={styles.menuText}>Ca làm việc hàng tháng</span>
             </button>
             
             <button 
@@ -2965,6 +3621,276 @@ export default function DashboardPage() {
               </button>
               <button className={styles.deleteConfirmButton} onClick={handleConfirmDeleteSchedule}>
                 Xóa phân công
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Monthly Schedule Modal */}
+      {showCreateMonthlyScheduleModal && (
+        <div className={styles.modalOverlay} key={employeeRoles ? 'with-data' : 'no-data'}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3>Tạo phân công tháng {selectedMonth}/{selectedYear}</h3>
+              <button 
+                className={styles.closeButton}
+                onClick={handleCloseCreateMonthlyScheduleModal}
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              {createMonthlyScheduleError && (
+                <div className={styles.errorAlert}>
+                  <span className={styles.errorIcon}><i className="bi bi-exclamation-triangle-fill"></i></span>
+                  <span className={styles.errorMessage}>{createMonthlyScheduleError}</span>
+                </div>
+              )}
+              
+              <div className={styles.scheduleInfo}>
+                <p><strong>Tháng:</strong> {selectedMonth}/{selectedYear}</p>
+                <p><strong>Số ngày:</strong> {getDaysInMonth(selectedMonth, selectedYear)} ngày</p>
+                <p><strong>Ca làm việc:</strong> Ca sáng, Ca chiều, Ca tối</p>
+              </div>
+
+              {/* Debug info */}
+              {/* {process.env.NODE_ENV === 'development' && (
+                <div style={{ background: '#f0f0f0', padding: '10px', margin: '10px 0', fontSize: '12px' }}>
+                  <strong>Debug:</strong><br />
+                  employeeRolesLoading: {employeeRolesLoading.toString()}<br />
+                  employeeRoles: {employeeRoles ? 'có dữ liệu' : 'null'}<br />
+                  {employeeRoles && (
+                    <>
+                      A: {employeeRoles.employee_a_name || 'undefined'}<br />
+                      B: {employeeRoles.employee_b_name || 'undefined'}<br />
+                      C: {employeeRoles.employee_c_name || 'undefined'}<br />
+                      D: {employeeRoles.employee_d_name || 'undefined'}<br />
+                      Raw data: {JSON.stringify(employeeRoles)}<br />
+                      Property check A: {typeof employeeRoles.employee_a_name} = "{employeeRoles.employee_a_name}"<br />
+                      Property check B: {typeof employeeRoles.employee_b_name} = "{employeeRoles.employee_b_name}"<br />
+                      Bracket access A: {employeeRoles['employee_a_name']}<br />
+                      Bracket access B: {employeeRoles['employee_b_name']}<br />
+                      Object keys: {Object.keys(employeeRoles).join(', ')}<br />
+                      Direct access test: {employeeRoles.employee_a_name ? 'HAS VALUE' : 'NO VALUE'}<br />
+                      State reference: {employeeRoles === null ? 'NULL' : 'NOT NULL'}<br />
+                      Condition check: {(employeeRoles.employee_a_name || employeeRoles.employee_b_name || employeeRoles.employee_c_name || employeeRoles.employee_d_name) ? 'TRUE' : 'FALSE'}
+                    </>
+                  )}
+                </div>
+              )} */}
+
+              {/* Thông tin về phân công hiện tại */}
+              <div className={styles.formGroup}>
+                <label>
+                  <i className="bi bi-info-circle"></i>
+                  Lưu ý quan trọng:
+                </label>
+                <div className={styles.scheduleNote}>
+                  <p>
+                    Phân công vai trò A, B, C, D được thiết lập từ phần <strong>"Quản lý phân công"</strong>. 
+                    Nếu bạn muốn thay đổi nhân viên đảm nhận các vai trò này, vui lòng:
+                  </p>
+                  <ol>
+                    <li>Vào menu <strong>"Quản lý phân công"</strong></li>
+                    <li>Chỉnh sửa hoặc tạo phân công mới với nhân viên mong muốn</li>
+                    <li>Quay lại đây để tạo ca làm việc hàng tháng</li>
+                  </ol>
+                </div>
+              </div>
+
+              {employeeRolesLoading ? (
+                <div className={styles.formGroup}>
+                  <label>Vai trò nhân viên hiện tại:</label>
+                  <div className={styles.loading}>
+                    <div className={styles.spinner}></div>
+                    <p>Đang tải vai trò nhân viên...</p>
+                  </div>
+                </div>
+              ) : employeeRoles && (employeeRoles.employee_a_name || employeeRoles.employee_b_name || employeeRoles.employee_c_name || employeeRoles.employee_d_name) ? (
+                <div className={styles.formGroup}>
+                  <label>Vai trò nhân viên hiện tại:</label>
+                  <div className={styles.employeeRolesContainer}>
+                    <div className={styles.roleItem}>
+                      <span className={styles.roleLabel}>Vai trò A:</span>
+                      <span className={styles.employeeName}>{employeeRoles.employee_a_name || 'Chưa phân công'}</span>
+                    </div>
+                    <div className={styles.roleItem}>
+                      <span className={styles.roleLabel}>Vai trò B:</span>
+                      <span className={styles.employeeName}>{employeeRoles.employee_b_name || 'Chưa phân công'}</span>
+                    </div>
+                    <div className={styles.roleItem}>
+                      <span className={styles.roleLabel}>Vai trò C:</span>
+                      <span className={styles.employeeName}>{employeeRoles.employee_c_name || 'Chưa phân công'}</span>
+                    </div>
+                    <div className={styles.roleItem}>
+                      <span className={styles.roleLabel}>Vai trò D:</span>
+                      <span className={styles.employeeName}>{employeeRoles.employee_d_name || 'Chưa phân công'}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : employeeRoles ? (
+                <div className={styles.formGroup}>
+                  <label>Vai trò nhân viên hiện tại:</label>
+                  <div className={styles.employeeRolesContainer}>
+                    <div className={styles.roleItem}>
+                      <span className={styles.roleLabel}>Vai trò A:</span>
+                      <span className={styles.employeeName}>{employeeRoles.employee_a_name || 'Chưa phân công'}</span>
+                    </div>
+                    <div className={styles.roleItem}>
+                      <span className={styles.roleLabel}>Vai trò B:</span>
+                      <span className={styles.employeeName}>{employeeRoles.employee_b_name || 'Chưa phân công'}</span>
+                    </div>
+                    <div className={styles.roleItem}>
+                      <span className={styles.roleLabel}>Vai trò C:</span>
+                      <span className={styles.employeeName}>{employeeRoles.employee_c_name || 'Chưa phân công'}</span>
+                    </div>
+                    <div className={styles.roleItem}>
+                      <span className={styles.roleLabel}>Vai trò D:</span>
+                      <span className={styles.employeeName}>{employeeRoles.employee_d_name || 'Chưa phân công'}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.formGroup}>
+                  <label>Vai trò nhân viên hiện tại:</label>
+                  <div className={styles.errorAlert}>
+                    <span className={styles.errorIcon}><i className="bi bi-exclamation-triangle-fill"></i></span>
+                    <span className={styles.errorMessage}>
+                      Chưa có phân công vai trò A,B,C,D nào. 
+                      <br />
+                      Vui lòng vào <strong>"Quản lý phân công"</strong> để thiết lập phân công vai trò trước khi tạo ca làm việc hàng tháng.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.formGroup}>
+                <label>Chọn vai trò làm ca sáng ngày 1:</label>
+                <select
+                  value={startingRole}
+                  onChange={(e) => setStartingRole(e.target.value as 'A' | 'B' | 'C' | 'D')}
+                  className={styles.formSelect}
+                  disabled={!employeeRoles}
+                >
+                  <option value="A">Vai trò A - {employeeRoles?.employee_a_name || 'Chưa phân công'}</option>
+                  <option value="B">Vai trò B - {employeeRoles?.employee_b_name || 'Chưa phân công'}</option>
+                  <option value="C">Vai trò C - {employeeRoles?.employee_c_name || 'Chưa phân công'}</option>
+                  <option value="D">Vai trò D - {employeeRoles?.employee_d_name || 'Chưa phân công'}</option>
+                </select>
+              </div>
+
+              <div className={styles.scheduleNote}>
+                <div className={styles.noteTitle}>
+                  <i className="bi bi-info-circle"></i>
+                  Quy tắc phân công tự động:
+                </div>
+                {startingRole && employeeRoles ? (
+                  <ul>
+                    <li>Ngày 1: {startingRole} (sáng), {getNextRole(startingRole, -1)} (chiều), {getNextRole(startingRole, -2)} (tối) - {getNextRole(startingRole, -3)} nghỉ</li>
+                    <li>Ngày 2: {getNextRole(startingRole, -3)} (sáng), {startingRole} (chiều), {getNextRole(startingRole, -1)} (tối) - {getNextRole(startingRole, -2)} nghỉ</li>
+                    <li>Ngày 3: {getNextRole(startingRole, -2)} (sáng), {getNextRole(startingRole, -3)} (chiều), {startingRole} (tối) - {getNextRole(startingRole, -1)} nghỉ</li>
+                    <li>Ngày 4: {getNextRole(startingRole, -1)} (sáng), {getNextRole(startingRole, -2)} (chiều), {getNextRole(startingRole, -3)} (tối) - {startingRole} nghỉ</li>
+                    <li>Chu kỳ 4 ngày sẽ lặp lại cho đến hết tháng</li>
+                  </ul>
+                ) : (
+                  <p>Vui lòng thiết lập phân công vai trò A,B,C,D trước trong "Quản lý phân công"</p>
+                )}
+              </div>
+            </div>
+            
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.cancelButton}
+                onClick={handleCloseCreateMonthlyScheduleModal}
+              >
+                Hủy
+              </button>
+              <button 
+                className={styles.saveButton}
+                onClick={handleGenerateAutoSchedule}
+                disabled={!employeeRoles}
+              >
+                Tạo phân công tự động
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Day Schedule Modal */}
+      {showEditDayScheduleModal && editingDaySchedule && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3>Chỉnh sửa ca làm việc - Ngày {editingDaySchedule.date}/{selectedMonth}/{selectedYear}</h3>
+              <button 
+                className={styles.closeButton}
+                onClick={handleCloseEditDayScheduleModal}
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              {editDayScheduleError && (
+                <div className={styles.errorAlert}>
+                  <span className={styles.errorIcon}><i className="bi bi-exclamation-triangle-fill"></i></span>
+                  <span className={styles.errorMessage}>{editDayScheduleError}</span>
+                </div>
+              )}
+              
+              {(['morning', 'afternoon', 'evening'] as const).map(shiftType => (
+                <div key={shiftType} className={styles.formGroup}>
+                  <label>{getShiftName(shiftType)}:</label>
+                  <select
+                    value={editDayScheduleData.shifts[shiftType].role || ''}
+                    onChange={(e) => {
+                      const role = e.target.value as 'A' | 'B' | 'C' | 'D';
+                      setEditDayScheduleData(prev => ({
+                        ...prev,
+                        shifts: {
+                          ...prev.shifts,
+                          [shiftType]: {
+                            role: role,
+                            employee_name: role ? getEmployeeNameByRole(role) : ''
+                          }
+                        }
+                      }));
+                    }}
+                    className={styles.formSelect}
+                  >
+                    <option value="">Chưa phân công</option>
+                    <option value="A">Vai trò A - {employeeRoles?.employee_a_name || 'Chưa phân công'}</option>
+                    <option value="B">Vai trò B - {employeeRoles?.employee_b_name || 'Chưa phân công'}</option>
+                    <option value="C">Vai trò C - {employeeRoles?.employee_c_name || 'Chưa phân công'}</option>
+                    <option value="D">Vai trò D - {employeeRoles?.employee_d_name || 'Chưa phân công'}</option>
+                  </select>
+                </div>
+              ))}
+
+              <div className={styles.scheduleNote}>
+                <div className={styles.noteTitle}>
+                  <i className="bi bi-exclamation-triangle"></i>
+                  Lưu ý:
+                </div>
+                <p>Việc thay đổi ca làm việc có thể ảnh hưởng đến lịch trình của nhân viên. Vui lòng thông báo cho nhân viên về sự thay đổi.</p>
+              </div>
+            </div>
+            
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.cancelButton}
+                onClick={handleCloseEditDayScheduleModal}
+              >
+                Hủy
+              </button>
+              <button 
+                className={styles.saveButton}
+                onClick={handleSaveDaySchedule}
+              >
+                Lưu thay đổi
               </button>
             </div>
           </div>

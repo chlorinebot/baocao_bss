@@ -300,4 +300,30 @@ export class WorkScheduleService {
       schedules
     };
   }
+
+  // Lấy vai trò nhân viên hiện tại (A, B, C, D)
+  async getEmployeeRoles(): Promise<any> {
+    const activeSchedule = await this.workScheduleRepository.findOne({
+      where: { active: true },
+      relations: ['employeeA', 'employeeB', 'employeeC', 'employeeD'],
+      order: { created_date: 'DESC' }
+    });
+
+    if (!activeSchedule) {
+      throw new NotFoundException('Không tìm thấy phân công vai trò active nào');
+    }
+
+    return {
+      employee_a: activeSchedule.employee_a,
+      employee_b: activeSchedule.employee_b,
+      employee_c: activeSchedule.employee_c,
+      employee_d: activeSchedule.employee_d,
+      employee_a_name: activeSchedule.employeeA ? `${activeSchedule.employeeA.firstName} ${activeSchedule.employeeA.lastName}` : 'Chưa phân công',
+      employee_b_name: activeSchedule.employeeB ? `${activeSchedule.employeeB.firstName} ${activeSchedule.employeeB.lastName}` : 'Chưa phân công',
+      employee_c_name: activeSchedule.employeeC ? `${activeSchedule.employeeC.firstName} ${activeSchedule.employeeC.lastName}` : 'Chưa phân công',
+      employee_d_name: activeSchedule.employeeD ? `${activeSchedule.employeeD.firstName} ${activeSchedule.employeeD.lastName}` : 'Chưa phân công',
+      created_date: activeSchedule.created_date,
+      activation_date: activeSchedule.activation_date
+    };
+  }
 } 
