@@ -36,6 +36,15 @@ interface Report {
   created_at: string;
 }
 
+// Thêm interface cho quyền tạo báo cáo
+interface ReportPermission {
+  canCreate: boolean;
+  reason: string;
+  currentShift?: string;
+  shiftTime?: string;
+  isWorkingTime?: boolean;
+}
+
 export default function UserPage() {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
@@ -63,6 +72,10 @@ export default function UserPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  
+  // Thêm state cho quyền tạo báo cáo
+  const [reportPermission, setReportPermission] = useState<ReportPermission | null>(null);
+  const [checkingPermission, setCheckingPermission] = useState(false);
 
   useEffect(() => {
     // Cập nhật thời gian mỗi giây
@@ -152,11 +165,59 @@ export default function UserPage() {
         const data = await response.json();
         if (data.success) {
           setUserShift(data.data);
+          // Sau khi lấy được thông tin ca trực, kiểm tra quyền tạo báo cáo
+          checkReportPermission(userId);
         }
       }
     } catch (error) {
       console.error('Lỗi khi lấy thông tin ca trực:', error);
       setUserShift({ role: 'Chưa được phân công', shift: null, shiftTime: null, scheduleId: null });
+    }
+  };
+
+  // Thêm hàm kiểm tra quyền tạo báo cáo
+  const checkReportPermission = async (userId: number) => {
+    setCheckingPermission(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/reports/can-create/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReportPermission({
+          canCreate: data.canCreate || false,
+          reason: data.reason || '',
+          currentShift: data.currentShift || '',
+          shiftTime: data.shiftTime || '',
+          isWorkingTime: data.isWorkingTime || false
+        });
+      } else {
+        const errorData = await response.json();
+        setReportPermission({
+          canCreate: false,
+          reason: errorData.error || 'Không thể kiểm tra quyền tạo báo cáo',
+          currentShift: '',
+          shiftTime: '',
+          isWorkingTime: false
+        });
+      }
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra quyền tạo báo cáo:', error);
+      setReportPermission({
+        canCreate: false,
+        reason: 'Lỗi kết nối khi kiểm tra quyền tạo báo cáo',
+        currentShift: '',
+        shiftTime: '',
+        isWorkingTime: false
+      });
+    } finally {
+      setCheckingPermission(false);
     }
   };
 
@@ -445,6 +506,49 @@ export default function UserPage() {
     }, 3000); // Ẩn toast sau 3 giây
   };
 
+  // Hàm format thông tin ca làm việc để hiển thị
+  const getShiftDisplayInfo = () => {
+    if (checkingPermission) {
+      return {
+        shift: 'Đang kiểm tra...',
+        time: '',
+        status: 'loading'
+      };
+    }
+
+    if (!reportPermission || !userShift) {
+      return {
+        shift: 'Chưa được phân công',
+        time: '',
+        status: 'not-assigned'
+      };
+    }
+
+    // Nếu có thông tin ca từ reportPermission
+    if (reportPermission.currentShift && reportPermission.shiftTime) {
+      return {
+        shift: reportPermission.currentShift,
+        time: reportPermission.shiftTime,
+        status: reportPermission.isWorkingTime ? 'working' : 'not-working'
+      };
+    }
+
+    // Fallback từ userShift
+    if (userShift.shift && userShift.shiftTime) {
+      return {
+        shift: userShift.shift,
+        time: userShift.shiftTime,
+        status: 'assigned'
+      };
+    }
+
+    return {
+      shift: 'Đang nghỉ',
+      time: '',
+      status: 'off'
+    };
+  };
+
   if (isLoading) {
     return (
       <div className={`${styles.container} telsoft-gradient-static`}>
@@ -477,13 +581,33 @@ export default function UserPage() {
                 {userRole?.role || 'Đang tải...'}
               </span>
             </div>
-            {userShift && userShift.shift && (
-              <div className={styles.shiftDisplay}>
-                <i className="bi bi-clock-history" style={{ marginRight: '8px' }}></i>
-                <span className={styles.shiftLabel}>Ca Sáng</span>
-                <span className={styles.shiftTime}>(06:00 - 14:00)</span>
-              </div>
-            )}
+            {(() => {
+              const shiftInfo = getShiftDisplayInfo();
+              return (
+                <div className={styles.shiftDisplay}>
+                  <i className="bi bi-clock-history" style={{ marginRight: '8px' }}></i>
+                  <span className={styles.shiftLabel}>{shiftInfo.shift}</span>
+                  {shiftInfo.time && (
+                    <span className={styles.shiftTime}>({shiftInfo.time})</span>
+                  )}
+                  {shiftInfo.status === 'not-working' && (
+                    <span className={styles.shiftStatus} style={{ color: '#dc3545', marginLeft: '8px' }}>
+                      - Chưa đến giờ làm
+                    </span>
+                  )}
+                  {shiftInfo.status === 'working' && (
+                    <span className={styles.shiftStatus} style={{ color: '#28a745', marginLeft: '8px' }}>
+                      - Đang trong ca
+                    </span>
+                  )}
+                  {shiftInfo.status === 'off' && (
+                    <span className={styles.shiftStatus} style={{ color: '#6c757d', marginLeft: '8px' }}>
+                      - Đang nghỉ
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
             <div className={styles.shiftDisplay}>
               <i className="bi bi-calendar-date" style={{ marginRight: '8px' }}></i>
               <span className={styles.shiftLabel}>Ngày</span>
@@ -567,8 +691,10 @@ export default function UserPage() {
                         <button 
                           className={styles.featureButton}
                           onClick={() => setActiveSection('create-report')}
+                          disabled={!reportPermission?.canCreate}
+                          style={!reportPermission?.canCreate ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                         >
-                          Tạo báo cáo
+                          {reportPermission?.canCreate ? 'Tạo báo cáo' : 'Không thể tạo báo cáo'}
                         </button>
                       </div>
                     </div>
@@ -629,10 +755,62 @@ export default function UserPage() {
           {activeSection === 'create-report' && (
             <div className={styles.sectionContent}>
               <h2 className={styles.sectionTitle}>Tạo báo cáo mới</h2>
+
+              {/* Thông báo quyền tạo báo cáo */}
+              {checkingPermission ? (
+                <div className={styles.permissionCheck} style={{ 
+                  background: '#f8f9fa', 
+                  border: '1px solid #dee2e6', 
+                  borderRadius: '8px', 
+                  padding: '16px', 
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div className={styles.spinner} style={{ width: '20px', height: '20px' }}></div>
+                  <span>Đang kiểm tra quyền tạo báo cáo...</span>
+                </div>
+              ) : reportPermission && !reportPermission.canCreate ? (
+                <div className={styles.permissionDenied} style={{ 
+                  background: '#f8d7da', 
+                  border: '1px solid #f5c6cb', 
+                  borderRadius: '8px', 
+                  padding: '16px', 
+                  marginBottom: '20px',
+                  color: '#721c24'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <i className="bi bi-exclamation-triangle-fill" style={{ color: '#dc3545' }}></i>
+                    <strong>Không thể tạo báo cáo</strong>
+                  </div>
+                  <p style={{ margin: '0', lineHeight: '1.5' }}>{reportPermission.reason}</p>
+                </div>
+              ) : reportPermission && reportPermission.canCreate ? (
+                <div className={styles.permissionGranted} style={{ 
+                  background: '#d1edff', 
+                  border: '1px solid #bee5eb', 
+                  borderRadius: '8px', 
+                  padding: '16px', 
+                  marginBottom: '20px',
+                  color: '#0c5460'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="bi bi-check-circle-fill" style={{ color: '#28a745' }}></i>
+                    <strong>Được phép tạo báo cáo</strong>
+                  </div>
+                  {reportPermission.reason && (
+                    <p style={{ margin: '8px 0 0 0', lineHeight: '1.5' }}>{reportPermission.reason}</p>
+                  )}
+                </div>
+              ) : null}
+
               <div className={styles.reportButtons}>
                 <button 
                   className={styles.reportButton}
                   onClick={() => router.push('/reports#apisix')}
+                  disabled={!reportPermission?.canCreate}
+                  style={!reportPermission?.canCreate ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
                   <i className="bi bi-router" style={{ marginRight: '8px' }}></i>
                   Apache APISIX
@@ -640,6 +818,8 @@ export default function UserPage() {
                 <button 
                   className={styles.reportButton}
                   onClick={() => router.push('/reports#node-exporter')}
+                  disabled={!reportPermission?.canCreate}
+                  style={!reportPermission?.canCreate ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
                   <i className="bi bi-hdd-network" style={{ marginRight: '8px' }}></i>
                   Node Exporter multiple Server Metrics
@@ -647,6 +827,8 @@ export default function UserPage() {
                 <button 
                   className={styles.reportButton}
                   onClick={() => router.push('/reports#patroni')}
+                  disabled={!reportPermission?.canCreate}
+                  style={!reportPermission?.canCreate ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
                   <i className="bi bi-database-check" style={{ marginRight: '8px' }}></i>
                   PostgreSQL Patroni
@@ -654,6 +836,8 @@ export default function UserPage() {
                 <button 
                   className={styles.reportButton}
                   onClick={() => router.push('/reports#transactions')}
+                  disabled={!reportPermission?.canCreate}
+                  style={!reportPermission?.canCreate ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
                   <i className="bi bi-database" style={{ marginRight: '8px' }}></i>
                   PostgreSQL Database
@@ -661,6 +845,8 @@ export default function UserPage() {
                 <button 
                   className={styles.reportButton}
                   onClick={() => router.push('/reports#heartbeat')}
+                  disabled={!reportPermission?.canCreate}
+                  style={!reportPermission?.canCreate ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
                   <i className="bi bi-discord" style={{ marginRight: '8px' }}></i>
                   Sử dụng Discord giám sát

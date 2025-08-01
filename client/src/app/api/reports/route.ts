@@ -77,41 +77,62 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '') || request.cookies.get('token')?.value;
+    const url = new URL(request.url);
+    const pathname = url.pathname;
     
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Token not found' },
-        { status: 401 }
-      );
-    }
+    // Kiểm tra nếu là route can-create
+    const canCreateMatch = pathname.match(/\/api\/reports\/can-create\/(\d+)$/);
+    if (canCreateMatch) {
+      const userId = canCreateMatch[1];
+      
+      const token = request.headers.get('authorization')?.replace('Bearer ', '') || 
+                   request.cookies.get('auth-token')?.value ||
+                   request.headers.get('x-auth-token');
 
-    // Lấy query parameters
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('user_id');
-    
-    let url = `${BACKEND_URL}/reports`;
-    if (userId) {
-      url += `?user_id=${userId}`;
-    }
-
-    try {
-      const response = await fetch(url, {
+      const response = await fetch(`${BACKEND_URL}/reports/can-create/${userId}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
       });
 
       if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (parseError) {
-          const errorText = await response.text();
-          errorData = { message: errorText || 'Failed to fetch reports' };
-        }
+        const errorData = await response.json();
+        return NextResponse.json(
+          { error: errorData.message || 'Failed to check report permission' },
+          { status: response.status }
+        );
+      }
+
+      const data = await response.json();
+      return NextResponse.json(data);
+    }
+
+    // Xử lý các route GET khác (lấy danh sách báo cáo)
+    const { searchParams } = url;
+    const userId = searchParams.get('user_id');
+    
+    let backendUrl = `${BACKEND_URL}/reports`;
+    if (userId) {
+      backendUrl += `?user_id=${userId}`;
+    }
+
+    const token = request.headers.get('authorization')?.replace('Bearer ', '') || 
+                 request.cookies.get('auth-token')?.value ||
+                 request.headers.get('x-auth-token');
+
+    try {
+      const response = await fetch(backendUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
         return NextResponse.json(
           { error: errorData.message || 'Failed to fetch reports' },
           { status: response.status }
@@ -120,7 +141,6 @@ export async function GET(request: NextRequest) {
 
       const data = await response.json();
       return NextResponse.json(data);
-      
     } catch (fetchError) {
       return NextResponse.json(
         { error: `Không thể kết nối đến backend: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}` },

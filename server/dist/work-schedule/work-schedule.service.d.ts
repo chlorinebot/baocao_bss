@@ -39,4 +39,16 @@ export declare class WorkScheduleService {
         schedules: WorkSchedule[];
     }>;
     getEmployeeRoles(): Promise<any>;
+    getUserScheduleForDate(userId: number, date?: Date): Promise<{
+        isAssigned: boolean;
+        role: string;
+        assignedShifts: Array<{
+            shiftType: 'morning' | 'afternoon' | 'evening';
+            shiftName: string;
+            shiftTime: string;
+            isCurrentShift: boolean;
+        }>;
+        scheduleId: number | null;
+    }>;
+    isUserAssignedToShift(userId: number, shiftType: 'morning' | 'afternoon' | 'evening', date?: Date): Promise<boolean>;
 }

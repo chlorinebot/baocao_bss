@@ -15,6 +15,8 @@ let Report = class Report {
     id;
     id_user;
     content;
+    shift_type;
+    shift_date;
     created_at;
 };
 exports.Report = Report;
@@ -30,6 +32,23 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true, default: null }),
     __metadata("design:type", String)
 ], Report.prototype, "content", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: ['morning', 'afternoon', 'evening'],
+        nullable: true,
+        comment: 'Loại ca làm việc khi tạo báo cáo'
+    }),
+    __metadata("design:type", String)
+], Report.prototype, "shift_type", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'date',
+        nullable: true,
+        comment: 'Ngày của ca làm việc'
+    }),
+    __metadata("design:type", Date)
+], Report.prototype, "shift_date", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' }),
     __metadata("design:type", Date)

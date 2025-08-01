@@ -2415,24 +2415,13 @@ export default function DashboardPage() {
                             backgroundColor: '#f8f9fa'
                           }}>
                             <div className={styles.dayHeader}>
-                              <span className={styles.dayNumber} style={{
-                                fontSize: '18px',
-                                fontWeight: 'bold',
-                                color: '#007bff'
-                              }}>
-                                Ngày {daySchedule?.date || (index + 1)}
+                              <span className={styles.dayNumber}>
+                                {daySchedule?.date || (index + 1)}
                               </span>
                               <button 
                                 className={styles.editDayButton}
                                 onClick={() => handleEditDaySchedule(daySchedule, index)}
                                 title="Chỉnh sửa ca làm việc ngày này"
-                                style={{
-                                  background: '#28a745',
-                                  color: 'white',
-                                  border: 'none',
-                                  padding: '5px 10px',
-                                  borderRadius: '4px'
-                                }}
                               >
                                 <i className="bi bi-pencil"></i> Sửa
                               </button>

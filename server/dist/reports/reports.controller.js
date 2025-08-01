@@ -20,6 +20,13 @@ let ReportsController = class ReportsController {
     constructor(reportsService) {
         this.reportsService = reportsService;
     }
+    async canCreateReport(userId) {
+        const userIdNumber = parseInt(userId, 10);
+        if (isNaN(userIdNumber)) {
+            return { error: 'Invalid user_id parameter' };
+        }
+        return this.reportsService.canCreateReport(userIdNumber);
+    }
     async createReport(body) {
         return this.reportsService.createReport(body.id_user, body.content);
     }
@@ -33,8 +40,19 @@ let ReportsController = class ReportsController {
         }
         return this.reportsService.getAllReports();
     }
+    async getReportsByShift(shiftType, date) {
+        const queryDate = date ? new Date(date) : undefined;
+        return this.reportsService.getReportsByShift(shiftType, queryDate);
+    }
 };
 exports.ReportsController = ReportsController;
+__decorate([
+    (0, common_1.Get)('can-create/:userId'),
+    __param(0, (0, common_1.Param)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ReportsController.prototype, "canCreateReport", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
@@ -49,6 +67,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getAllReports", null);
+__decorate([
+    (0, common_1.Get)('by-shift/:shiftType'),
+    __param(0, (0, common_1.Param)('shiftType')),
+    __param(1, (0, common_1.Query)('date')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], ReportsController.prototype, "getReportsByShift", null);
 exports.ReportsController = ReportsController = __decorate([
     (0, common_1.Controller)('reports'),
     __metadata("design:paramtypes", [reports_service_1.ReportsService])

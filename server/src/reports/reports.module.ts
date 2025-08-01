@@ -21,9 +21,13 @@ import { HeartbeatReportsController } from './heartbeat-reports.controller';
 import { AlertReport } from '../entities/alert-report.entity';
 import { AlertReportsService } from './alert-reports.service';
 import { AlertReportsController } from './alert-reports.controller';
+import { WorkScheduleModule } from '../work-schedule/work-schedule.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Report, NemsmReport, ApisixReport, PatroniReport, TransactionReport, HeartbeatReport, AlertReport])],
+  imports: [
+    TypeOrmModule.forFeature([Report, NemsmReport, ApisixReport, PatroniReport, TransactionReport, HeartbeatReport, AlertReport]),
+    WorkScheduleModule
+  ],
   providers: [ReportsService, NemsmReportsService, ApisixReportsService, PatroniReportsService, TransactionReportsService, HeartbeatReportsService, AlertReportsService],
   controllers: [ReportsController, NemsmReportsController, ApisixReportsController, PatroniReportsController, TransactionReportsController, HeartbeatReportsController, AlertReportsController],
   exports: [ReportsService, NemsmReportsService, ApisixReportsService, PatroniReportsService, TransactionReportsService, HeartbeatReportsService, AlertReportsService],

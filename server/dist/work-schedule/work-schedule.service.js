@@ -261,6 +261,122 @@ let WorkScheduleService = class WorkScheduleService {
             activation_date: activeSchedule.activation_date
         };
     }
+    async getUserScheduleForDate(userId, date = new Date()) {
+        try {
+            const targetDate = new Date(date);
+            targetDate.setHours(0, 0, 0, 0);
+            const schedule = await this.workScheduleRepository.findOne({
+                where: {
+                    activation_date: targetDate
+                },
+                relations: ['employeeA', 'employeeB', 'employeeC', 'employeeD'],
+                order: { created_date: 'DESC' }
+            });
+            if (!schedule) {
+                return {
+                    isAssigned: false,
+                    role: 'Chưa được phân công',
+                    assignedShifts: [],
+                    scheduleId: null
+                };
+            }
+            let role = 'Chưa được phân công';
+            let rolePosition = null;
+            if (schedule.employee_a === userId) {
+                role = 'Nhân viên A';
+                rolePosition = 'A';
+            }
+            else if (schedule.employee_b === userId) {
+                role = 'Nhân viên B';
+                rolePosition = 'B';
+            }
+            else if (schedule.employee_c === userId) {
+                role = 'Nhân viên C';
+                rolePosition = 'C';
+            }
+            else if (schedule.employee_d === userId) {
+                role = 'Nhân viên D';
+                rolePosition = 'D';
+            }
+            if (!rolePosition) {
+                return {
+                    isAssigned: false,
+                    role: 'Chưa được phân công',
+                    assignedShifts: [],
+                    scheduleId: schedule.id
+                };
+            }
+            const assignedShifts = [];
+            const now = new Date();
+            const currentHour = now.getHours();
+            switch (rolePosition) {
+                case 'A':
+                    assignedShifts.push({
+                        shiftType: 'morning',
+                        shiftName: 'Ca Sáng',
+                        shiftTime: '06:00 - 14:00',
+                        isCurrentShift: currentHour >= 6 && currentHour < 14
+                    });
+                    break;
+                case 'B':
+                    assignedShifts.push({
+                        shiftType: 'afternoon',
+                        shiftName: 'Ca Chiều',
+                        shiftTime: '14:00 - 22:00',
+                        isCurrentShift: currentHour >= 14 && currentHour < 22
+                    });
+                    break;
+                case 'C':
+                    assignedShifts.push({
+                        shiftType: 'evening',
+                        shiftName: 'Ca Đêm',
+                        shiftTime: '22:00 - 06:00',
+                        isCurrentShift: currentHour >= 22 || currentHour < 6
+                    });
+                    break;
+                case 'D':
+                    assignedShifts.push({
+                        shiftType: 'morning',
+                        shiftName: 'Ca Sáng',
+                        shiftTime: '06:00 - 14:00',
+                        isCurrentShift: currentHour >= 6 && currentHour < 14
+                    }, {
+                        shiftType: 'afternoon',
+                        shiftName: 'Ca Chiều',
+                        shiftTime: '14:00 - 22:00',
+                        isCurrentShift: currentHour >= 14 && currentHour < 22
+                    }, {
+                        shiftType: 'evening',
+                        shiftName: 'Ca Đêm',
+                        shiftTime: '22:00 - 06:00',
+                        isCurrentShift: currentHour >= 22 || currentHour < 6
+                    });
+                    break;
+            }
+            return {
+                isAssigned: true,
+                role,
+                assignedShifts,
+                scheduleId: schedule.id
+            };
+        }
+        catch (error) {
+            console.error('Lỗi khi lấy lịch phân công theo ngày:', error);
+            return {
+                isAssigned: false,
+                role: 'Lỗi hệ thống',
+                assignedShifts: [],
+                scheduleId: null
+            };
+        }
+    }
+    async isUserAssignedToShift(userId, shiftType, date = new Date()) {
+        const schedule = await this.getUserScheduleForDate(userId, date);
+        if (!schedule.isAssigned) {
+            return false;
+        }
+        return schedule.assignedShifts.some(shift => shift.shiftType === shiftType);
+    }
 };
 exports.WorkScheduleService = WorkScheduleService;
 exports.WorkScheduleService = WorkScheduleService = __decorate([

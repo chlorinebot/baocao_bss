@@ -326,4 +326,170 @@ export class WorkScheduleService {
       activation_date: activeSchedule.activation_date
     };
   }
+
+  /**
+   * Lấy thông tin phân công ca làm việc của user trong ngày cụ thể
+   * Trả về thông tin chi tiết về ca làm việc được phân công
+   */
+  async getUserScheduleForDate(userId: number, date: Date = new Date()): Promise<{
+    isAssigned: boolean;
+    role: string;
+    assignedShifts: Array<{
+      shiftType: 'morning' | 'afternoon' | 'evening';
+      shiftName: string;
+      shiftTime: string;
+      isCurrentShift: boolean;
+    }>;
+    scheduleId: number | null;
+  }> {
+    try {
+      // Chuẩn hóa ngày để so sánh (chỉ lấy ngày, không lấy giờ)
+      const targetDate = new Date(date);
+      targetDate.setHours(0, 0, 0, 0);
+
+      // Tìm schedule cho ngày cụ thể
+      const schedule = await this.workScheduleRepository.findOne({
+        where: { 
+          activation_date: targetDate
+        },
+        relations: ['employeeA', 'employeeB', 'employeeC', 'employeeD'],
+        order: { created_date: 'DESC' }
+      });
+
+      if (!schedule) {
+        return {
+          isAssigned: false,
+          role: 'Chưa được phân công',
+          assignedShifts: [],
+          scheduleId: null
+        };
+      }
+
+      // Kiểm tra user có trong schedule không và xác định vai trò
+      let role = 'Chưa được phân công';
+      let rolePosition: 'A' | 'B' | 'C' | 'D' | null = null;
+
+      if (schedule.employee_a === userId) {
+        role = 'Nhân viên A';
+        rolePosition = 'A';
+      } else if (schedule.employee_b === userId) {
+        role = 'Nhân viên B';
+        rolePosition = 'B';
+      } else if (schedule.employee_c === userId) {
+        role = 'Nhân viên C';
+        rolePosition = 'C';
+      } else if (schedule.employee_d === userId) {
+        role = 'Nhân viên D';
+        rolePosition = 'D';
+      }
+
+      if (!rolePosition) {
+        return {
+          isAssigned: false,
+          role: 'Chưa được phân công',
+          assignedShifts: [],
+          scheduleId: schedule.id
+        };
+      }
+
+      // Xác định ca làm việc dựa trên vai trò
+      // Logic phân công ca theo vai trò:
+      // - Nhân viên A: Ca sáng (06:00 - 14:00)
+      // - Nhân viên B: Ca chiều (14:00 - 22:00)  
+      // - Nhân viên C: Ca đêm (22:00 - 06:00)
+      // - Nhân viên D: Dự phòng/thay thế
+      const assignedShifts: Array<{
+        shiftType: 'morning' | 'afternoon' | 'evening';
+        shiftName: string;
+        shiftTime: string;
+        isCurrentShift: boolean;
+      }> = [];
+      const now = new Date();
+      const currentHour = now.getHours();
+
+      switch (rolePosition) {
+        case 'A':
+          assignedShifts.push({
+            shiftType: 'morning',
+            shiftName: 'Ca Sáng',
+            shiftTime: '06:00 - 14:00',
+            isCurrentShift: currentHour >= 6 && currentHour < 14
+          });
+          break;
+        case 'B':
+          assignedShifts.push({
+            shiftType: 'afternoon',
+            shiftName: 'Ca Chiều', 
+            shiftTime: '14:00 - 22:00',
+            isCurrentShift: currentHour >= 14 && currentHour < 22
+          });
+          break;
+        case 'C':
+          assignedShifts.push({
+            shiftType: 'evening',
+            shiftName: 'Ca Đêm',
+            shiftTime: '22:00 - 06:00',
+            isCurrentShift: currentHour >= 22 || currentHour < 6
+          });
+          break;
+        case 'D':
+          // Nhân viên D có thể làm tất cả các ca (dự phòng)
+          assignedShifts.push(
+            {
+              shiftType: 'morning',
+              shiftName: 'Ca Sáng',
+              shiftTime: '06:00 - 14:00',
+              isCurrentShift: currentHour >= 6 && currentHour < 14
+            },
+            {
+              shiftType: 'afternoon',
+              shiftName: 'Ca Chiều',
+              shiftTime: '14:00 - 22:00', 
+              isCurrentShift: currentHour >= 14 && currentHour < 22
+            },
+            {
+              shiftType: 'evening',
+              shiftName: 'Ca Đêm',
+              shiftTime: '22:00 - 06:00',
+              isCurrentShift: currentHour >= 22 || currentHour < 6
+            }
+          );
+          break;
+      }
+
+      return {
+        isAssigned: true,
+        role,
+        assignedShifts,
+        scheduleId: schedule.id
+      };
+
+    } catch (error) {
+      console.error('Lỗi khi lấy lịch phân công theo ngày:', error);
+      return {
+        isAssigned: false,
+        role: 'Lỗi hệ thống',
+        assignedShifts: [],
+        scheduleId: null
+      };
+    }
+  }
+
+  /**
+   * Kiểm tra xem user có được phân công ca cụ thể trong ngày không
+   */
+  async isUserAssignedToShift(
+    userId: number, 
+    shiftType: 'morning' | 'afternoon' | 'evening',
+    date: Date = new Date()
+  ): Promise<boolean> {
+    const schedule = await this.getUserScheduleForDate(userId, date);
+    
+    if (!schedule.isAssigned) {
+      return false;
+    }
+
+    // Kiểm tra xem có ca được phân công khớp với shiftType không
+    return schedule.assignedShifts.some(shift => shift.shiftType === shiftType);
+  }
 } 
