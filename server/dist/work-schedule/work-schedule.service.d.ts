@@ -28,6 +28,7 @@ export declare class WorkScheduleService {
     getAvailableEmployees(): Promise<User[]>;
     getUserRole(userId: number): Promise<{
         role: string;
+        roleLetter?: string;
         scheduleId: number | null;
     }>;
     getUserCurrentShift(userId: number): Promise<{

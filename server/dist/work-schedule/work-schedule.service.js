@@ -154,6 +154,7 @@ let WorkScheduleService = class WorkScheduleService {
     async getUserRole(userId) {
         try {
             console.log(`🔍 getUserRole: Lấy vai trò cho user ${userId}`);
+            console.log(`📊 DEBUG: User ID đang request = ${userId}`);
             const now = new Date();
             const currentHour = now.getHours();
             const currentMinute = now.getMinutes();
@@ -192,21 +193,25 @@ let WorkScheduleService = class WorkScheduleService {
                     }
                     const daySchedule = scheduleData.find((day) => day.date === currentDay);
                     if (daySchedule && daySchedule.shifts) {
-                        console.log(`🎯 Tìm thấy schedule cho ngày ${currentDay}:`, daySchedule);
-                        if (daySchedule.shifts.morning && this.getUserByRole(daySchedule.shifts.morning.role) === userId) {
+                        console.log(`🎯 Tìm thấy schedule cho ngày ${currentDay}:`, JSON.stringify(daySchedule, null, 2));
+                        console.log(`🔍 Kiểm tra mapping cho user ${userId}:`);
+                        console.log(`  Morning role: ${daySchedule.shifts.morning?.role} → userId: ${await this.getUserByRole(daySchedule.shifts.morning?.role, searchDate)}`);
+                        console.log(`  Afternoon role: ${daySchedule.shifts.afternoon?.role} → userId: ${await this.getUserByRole(daySchedule.shifts.afternoon?.role, searchDate)}`);
+                        console.log(`  Evening role: ${daySchedule.shifts.evening?.role} → userId: ${await this.getUserByRole(daySchedule.shifts.evening?.role, searchDate)}`);
+                        if (daySchedule.shifts.morning && (await this.getUserByRole(daySchedule.shifts.morning.role, searchDate)) === userId) {
                             const roleName = daySchedule.shifts.morning.employee_name || `Nhân viên ${daySchedule.shifts.morning.role}`;
                             console.log(`✅ User ${userId} có role: ${roleName} (morning)`);
-                            return { role: roleName, scheduleId: monthlySchedule.id };
+                            return { role: roleName, roleLetter: daySchedule.shifts.morning.role, scheduleId: monthlySchedule.id };
                         }
-                        if (daySchedule.shifts.afternoon && this.getUserByRole(daySchedule.shifts.afternoon.role) === userId) {
+                        if (daySchedule.shifts.afternoon && (await this.getUserByRole(daySchedule.shifts.afternoon.role, searchDate)) === userId) {
                             const roleName = daySchedule.shifts.afternoon.employee_name || `Nhân viên ${daySchedule.shifts.afternoon.role}`;
                             console.log(`✅ User ${userId} có role: ${roleName} (afternoon)`);
-                            return { role: roleName, scheduleId: monthlySchedule.id };
+                            return { role: roleName, roleLetter: daySchedule.shifts.afternoon.role, scheduleId: monthlySchedule.id };
                         }
-                        if (daySchedule.shifts.evening && this.getUserByRole(daySchedule.shifts.evening.role) === userId) {
+                        if (daySchedule.shifts.evening && (await this.getUserByRole(daySchedule.shifts.evening.role, searchDate)) === userId) {
                             const roleName = daySchedule.shifts.evening.employee_name || `Nhân viên ${daySchedule.shifts.evening.role}`;
                             console.log(`✅ User ${userId} có role: ${roleName} (evening)`);
-                            return { role: roleName, scheduleId: monthlySchedule.id };
+                            return { role: roleName, roleLetter: daySchedule.shifts.evening.role, scheduleId: monthlySchedule.id };
                         }
                         console.log(`😴 User ${userId} nghỉ ngày ${currentDay} theo monthly_work_schedules`);
                         return { role: 'Nghỉ', scheduleId: monthlySchedule.id };
@@ -351,15 +356,15 @@ let WorkScheduleService = class WorkScheduleService {
                         console.log(`🎯 Tìm thấy schedule cho ngày ${currentDay}:`, daySchedule);
                         let userRole = '';
                         let userRoleName = '';
-                        if (daySchedule.shifts.morning && this.getUserByRole(daySchedule.shifts.morning.role) === userId) {
+                        if (daySchedule.shifts.morning && (await this.getUserByRole(daySchedule.shifts.morning.role, targetDate)) === userId) {
                             userRole = daySchedule.shifts.morning.role;
                             userRoleName = daySchedule.shifts.morning.employee_name || `Nhân viên ${userRole}`;
                         }
-                        else if (daySchedule.shifts.afternoon && this.getUserByRole(daySchedule.shifts.afternoon.role) === userId) {
+                        else if (daySchedule.shifts.afternoon && (await this.getUserByRole(daySchedule.shifts.afternoon.role, targetDate)) === userId) {
                             userRole = daySchedule.shifts.afternoon.role;
                             userRoleName = daySchedule.shifts.afternoon.employee_name || `Nhân viên ${userRole}`;
                         }
-                        else if (daySchedule.shifts.evening && this.getUserByRole(daySchedule.shifts.evening.role) === userId) {
+                        else if (daySchedule.shifts.evening && (await this.getUserByRole(daySchedule.shifts.evening.role, targetDate)) === userId) {
                             userRole = daySchedule.shifts.evening.role;
                             userRoleName = daySchedule.shifts.evening.employee_name || `Nhân viên ${userRole}`;
                         }
@@ -444,14 +449,63 @@ let WorkScheduleService = class WorkScheduleService {
         }
         return schedule.assignedShifts.some(shift => shift.shiftType === shiftType);
     }
-    getUserByRole(role) {
-        const roleMapping = {
-            'A': 5,
-            'B': 7,
-            'C': 4,
-            'D': 8
-        };
-        return roleMapping[role] || null;
+    async getUserByRole(role, searchDate) {
+        try {
+            const searchDateStr = searchDate.toISOString().split('T')[0];
+            console.log(`🔍 DEBUG getUserByRole: Tìm work_schedule cho ngày ${searchDateStr}`);
+            const allSchedules = await this.workScheduleRepository.find({
+                order: { created_date: 'DESC' }
+            });
+            console.log(`📊 DEBUG: Tất cả work_schedule trong DB:`, allSchedules.map(s => ({
+                id: s.id,
+                activation_date: s.activation_date,
+                employee_a: s.employee_a,
+                employee_b: s.employee_b,
+                employee_c: s.employee_c,
+                employee_d: s.employee_d,
+                active: s.active
+            })));
+            const schedule = await this.workScheduleRepository
+                .createQueryBuilder('schedule')
+                .where('DATE(schedule.activation_date) = :searchDate', { searchDate: searchDateStr })
+                .orderBy('schedule.created_date', 'DESC')
+                .getOne();
+            if (!schedule) {
+                console.log(`❌ Không tìm thấy work_schedule cho ngày ${searchDateStr}`);
+                console.log(`💡 Thử lấy work_schedule gần nhất thay thế:`);
+                const latestSchedule = await this.workScheduleRepository
+                    .createQueryBuilder('schedule')
+                    .where('schedule.active = :active', { active: true })
+                    .orderBy('schedule.created_date', 'DESC')
+                    .getOne();
+                if (latestSchedule) {
+                    console.log(`✅ Sử dụng work_schedule gần nhất ID ${latestSchedule.id}, activation_date: ${latestSchedule.activation_date}`);
+                    const roleMapping = {
+                        'A': latestSchedule.employee_a,
+                        'B': latestSchedule.employee_b,
+                        'C': latestSchedule.employee_c,
+                        'D': latestSchedule.employee_d
+                    };
+                    const userId = roleMapping[role] || null;
+                    console.log(`🔄 getUserByRole: role="${role}" → userId=${userId} (from latest work_schedule ID ${latestSchedule.id})`);
+                    return userId;
+                }
+                return null;
+            }
+            const roleMapping = {
+                'A': schedule.employee_a,
+                'B': schedule.employee_b,
+                'C': schedule.employee_c,
+                'D': schedule.employee_d
+            };
+            const userId = roleMapping[role] || null;
+            console.log(`🔄 getUserByRole: role="${role}" → userId=${userId} (from work_schedule ID ${schedule.id})`);
+            return userId;
+        }
+        catch (error) {
+            console.error(`❌ Lỗi khi lấy mapping role ${role}:`, error);
+            return null;
+        }
     }
     async clearAllWorkSchedules() {
         console.log('🗑️ Xóa tất cả records trong work_schedule');

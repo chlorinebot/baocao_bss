@@ -87,7 +87,15 @@ async function bootstrap() {
         next();
     });
     app.enableCors({
-        origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:9999', 'login:9999'],
+        origin: [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:9999',
+            'http://10.10.8.17:3000',
+            'http://10.10.8.27:3000',
+            'http://10.10.8.17:9999',
+            'http://10.10.8.27:9999',
+        ],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
         credentials: true,
@@ -98,10 +106,11 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
     }));
     const port = process.env.PORT || 3000;
-    await app.listen(port);
+    await app.listen(port, '0.0.0.0');
     console.log('✅ Server khởi động thành công!');
     console.log(`🌐 Server đang chạy tại: http://localhost:${port}`);
-    console.log(`�� Health check: http://localhost:${port}/health`);
+    console.log(`🌐 Server có thể truy cập tại: http://10.10.8.17:${port} và http://10.10.8.27:${port}`);
+    console.log(` Health check: http://localhost:${port}/health`);
     console.log(`👥 Users API: http://localhost:${port}/users`);
     console.log(`💼 Work Assignment API: http://localhost:${port}/work-schedule`);
     console.log('📝 Server sẵn sàng xử lý requests...');

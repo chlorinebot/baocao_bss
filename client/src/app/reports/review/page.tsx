@@ -136,7 +136,8 @@ export default function ReportReview() {
 
   const fetchUserShift = async (userId: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/work-schedule/user/${userId}/current-shift`);
+      const BASE = process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:3000`;
+      const response = await fetch(`${BASE}/work-schedule/user/${userId}/current-shift`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {

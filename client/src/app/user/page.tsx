@@ -19,6 +19,7 @@ interface UserInfo {
 
 interface UserRole {
   role: string;
+  roleLetter?: string;
   scheduleId: number | null;
 }
 
@@ -161,6 +162,10 @@ export default function UserPage() {
       }
 
       setUserInfo(userInfo);
+      // DEBUG: In ra user ID để kiểm tra
+      console.log('🔍 DEBUG: User đăng nhập có ID:', userInfo.id);
+      console.log('🔍 DEBUG: User Info đầy đủ:', userInfo);
+      
       // Lấy vai trò phân công và ca trực sau khi có thông tin user
       fetchUserRole(userInfo.id);
       fetchUserShift(userInfo.id);
@@ -176,9 +181,16 @@ export default function UserPage() {
   // Hàm lấy vai trò phân công của user
   const fetchUserRole = async (userId: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/work-schedule/user/${userId}/role`);
+      const BASE = process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:3000`;
+      console.log(`🔍 DEBUG: Gọi API getUserRole với userId = ${userId}`);
+      const response = await fetch(`${BASE}/work-schedule/user/${userId}/role`);
+      console.log(`🔍 DEBUG: Response status: ${response.status}`);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log(`🔍 DEBUG: Response data:`, data);
+        console.log(`🔍 DEBUG: User role:`, data.data?.role);
+        console.log(`🔍 DEBUG: User roleLetter:`, data.data?.roleLetter);
         if (data.success) {
           setUserRole(data.data);
         }
@@ -192,9 +204,14 @@ export default function UserPage() {
   // Hàm lấy thông tin ca trực hiện tại
   const fetchUserShift = async (userId: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/work-schedule/user/${userId}/current-shift`);
+      const BASE = process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:3000`;
+      console.log(`🔍 DEBUG: Gọi API getUserCurrentShift với userId = ${userId}`);
+      const response = await fetch(`${BASE}/work-schedule/user/${userId}/current-shift`);
+      console.log(`🔍 DEBUG: getUserCurrentShift Response status: ${response.status}`);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log(`🔍 DEBUG: getUserCurrentShift Response data:`, data);
         if (data.success) {
           setUserShift(data.data);
           // Sau khi lấy được thông tin ca trực, kiểm tra quyền tạo báo cáo
@@ -249,13 +266,20 @@ export default function UserPage() {
   // Hàm lấy lịch làm việc theo tháng
   const fetchWorkSchedule = async (month: number, year: number) => {
     try {
+      const BASE = process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:3000`;
       setLoadingSchedule(true);
       
-      const response = await fetch(`http://localhost:3000/monthly-schedules/${year}/${month}`);
+      console.log(`🔍 DEBUG: Fetching work schedule for ${month}/${year}`);
+      console.log(`🔍 DEBUG: Current userRole:`, userRole);
+      
+      const response = await fetch(`${BASE}/monthly-schedules/${year}/${month}`);
       const data = await response.json();
+
+      console.log(`🔍 DEBUG: Monthly schedule response:`, data);
 
       if (response.ok && data.success && data.data) {
         setWorkSchedule(data.data);
+        console.log(`🔍 DEBUG: Work schedule data:`, data.data);
         // Fetch report status for this month
         if (userInfo) {
           await fetchReportStatus(userInfo.id, month, year);
@@ -528,7 +552,8 @@ export default function UserPage() {
         throw new Error('Không có token hoặc thông tin user');
       }
 
-      const response = await fetch(`http://localhost:3000/users/${userInfo.id}`, {
+      const BASE = process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:3000`;
+      const response = await fetch(`${BASE}/users/${userInfo.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1303,28 +1328,51 @@ export default function UserPage() {
                     <div className={styles.scheduleHeader}>
                       <h3>Lịch làm việc tháng {selectedMonth}/{selectedYear}</h3>
                       <p>Vai trò của bạn: <strong>{userRole?.role || 'Chưa xác định'}</strong></p>
+                      {(!userRole?.roleLetter || userRole.role === 'Nghỉ' || userRole.role === 'Chưa được phân công') && (
+                        <p style={{ color: '#666', fontStyle: 'italic', fontSize: '14px' }}>
+                          💡 Hiển thị lịch làm việc tổng thể của tất cả nhân viên
+                        </p>
+                      )}
                     </div>
                     
                     <div className={styles.calendarGrid}>
                       {workSchedule.schedule_data.map((day) => {
-                        const currentUserRole = userRole?.role?.split(' ')[2]; // Lấy A, B, C, D từ "Nhân viên A"
+                        // Sử dụng roleLetter từ backend thay vì parse từ tên
+                        const currentUserRole = userRole?.roleLetter; // A, B, C, D từ backend
                         const userShifts: ShiftInfo[] = [];
                         
-                        if (day.shifts.morning?.role === currentUserRole) {
-                          userShifts.push({ type: 'morning', name: 'Sáng', time: '06:00-14:00' });
-                        }
-                        if (day.shifts.afternoon?.role === currentUserRole) {
-                          userShifts.push({ type: 'afternoon', name: 'Chiều', time: '14:00-22:00' });
-                        }
-                        if (day.shifts.evening?.role === currentUserRole) {
-                          userShifts.push({ type: 'evening', name: 'Đêm', time: '22:00-06:00' });
+                        console.log(`🔍 DEBUG Calendar: User role letter = ${currentUserRole}, Day ${day.date} shifts:`, day.shifts);
+                        
+                        // Nếu user có roleLetter, chỉ hiển thị ca của user đó
+                        if (currentUserRole) {
+                          if (day.shifts.morning?.role === currentUserRole) {
+                            userShifts.push({ type: 'morning', name: 'Sáng', time: '06:00-14:00' });
+                          }
+                          if (day.shifts.afternoon?.role === currentUserRole) {
+                            userShifts.push({ type: 'afternoon', name: 'Chiều', time: '14:00-22:00' });
+                          }
+                          if (day.shifts.evening?.role === currentUserRole) {
+                            userShifts.push({ type: 'evening', name: 'Đêm', time: '22:00-06:00' });
+                          }
+                        } else {
+                          // Nếu user không có roleLetter (Nghỉ/Chưa phân công), hiển thị tất cả ca với thông tin người làm
+                          if (day.shifts.morning) {
+                            userShifts.push({ type: 'morning', name: `Sáng (${day.shifts.morning.employee_name})`, time: '06:00-14:00' });
+                          }
+                          if (day.shifts.afternoon) {
+                            userShifts.push({ type: 'afternoon', name: `Chiều (${day.shifts.afternoon.employee_name})`, time: '14:00-22:00' });
+                          }
+                          if (day.shifts.evening) {
+                            userShifts.push({ type: 'evening', name: `Đêm (${day.shifts.evening.employee_name})`, time: '22:00-06:00' });
+                          }
                         }
                         
-                        // Kiểm tra ca đêm của ngày hôm trước (nếu ngày hiện tại nghỉ)
+                        // Kiểm tra ca đêm của ngày hôm trước (chỉ khi user có roleLetter)
                         const now = new Date();
                         const currentHour = now.getHours();
                         const currentMinute = now.getMinutes();
                         const isCurrentlyInPreviousEveningShift = 
+                          currentUserRole && // Chỉ áp dụng khi user có role cụ thể
                           userShifts.length === 0 && // Ngày hiện tại nghỉ
                           (currentHour < 6 || (currentHour === 6 && currentMinute < 30)) && // Đang trong khung giờ ca đêm
                           selectedMonth === new Date().getMonth() + 1 && 

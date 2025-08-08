@@ -68,8 +68,9 @@ export default function Navbar({
   // Hàm lấy thông tin vai trò và ca làm việc
   const fetchUserRoleAndShift = async (userId: number) => {
     try {
+      const BASE = process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:3000`;
       // Lấy vai trò
-      const roleResponse = await fetch(`http://localhost:3000/work-schedule/user/${userId}/role`);
+      const roleResponse = await fetch(`${BASE}/work-schedule/user/${userId}/role`);
       if (roleResponse.ok) {
         const roleData = await roleResponse.json();
         if (roleData.success) {

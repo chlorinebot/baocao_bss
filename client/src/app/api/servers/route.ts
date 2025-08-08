@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+
 export async function GET(request: NextRequest) {
   try {
-    const response = await fetch('http://localhost:3000/servers', {
+    const response = await fetch(`${BACKEND_URL}/servers`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

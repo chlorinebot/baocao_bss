@@ -101,12 +101,23 @@ interface ApiResponse<T = unknown> {
 }
 
 class ApiService {
+  private getBaseUrl(): string {
+    return (
+      process.env.NEXT_PUBLIC_API_URL ||
+      (typeof window !== 'undefined'
+        ? `http://${window.location.hostname}:3000`
+        : 'http://localhost:3000')
+    );
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const url = `${API_BASE_URL}${endpoint}`;
+      const resolvedBaseUrl = this.getBaseUrl();
+
+      const url = `${resolvedBaseUrl}${endpoint}`;
       const config: RequestInit = {
         headers: {
           'Content-Type': 'application/json',
@@ -240,7 +251,7 @@ class ApiService {
     
     try {
       console.log('🔗 [API] Making GET request to /monthly-schedules/' + year + '/' + month);
-      const response = await fetch(`${API_BASE_URL}/monthly-schedules/${year}/${month}`);
+      const response = await fetch(`${this.getBaseUrl()}/monthly-schedules/${year}/${month}`);
       
       console.log('📡 [API] Response status:', response.status);
       
@@ -326,7 +337,7 @@ class ApiService {
       console.log('📤 [API] Request body:', requestBody);
       console.log('🔗 [API] Making POST request to /monthly-schedules/auto-generate');
       
-      const response = await fetch(`${API_BASE_URL}/monthly-schedules/auto-generate`, {
+      const response = await fetch(`${this.getBaseUrl()}/monthly-schedules/auto-generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

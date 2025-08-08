@@ -17,6 +17,8 @@ import {
   EmployeeRoles
 } from '../lib/api';
 
+const BASE = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:3000` : 'http://localhost:3000');
+
 interface User {
   id: number;
   username: string;
@@ -256,7 +258,7 @@ export default function DashboardPage() {
   const fetchWorkSchedules = useCallback(async () => {
     setWorkSchedulesLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/work-schedule');
+      const response = await fetch(`${BASE}/work-schedule`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -386,7 +388,7 @@ export default function DashboardPage() {
   const fetchUsers = async () => {
     setUsersLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/users');
+      const response = await fetch(`${BASE}/users`);
       if (response.ok) {
         const usersData = await response.json();
         setUsers(usersData);
@@ -573,7 +575,7 @@ export default function DashboardPage() {
         role_id: editFormData.role_id
       };
 
-      const response = await fetch(`http://localhost:3000/users/${editingUser.id}`, {
+      const response = await fetch(`${BASE}/users/${editingUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -589,7 +591,7 @@ export default function DashboardPage() {
 
       // Update password separately if provided
       if (editFormData.password && canChangePassword(editingUser)) {
-        const passwordResponse = await fetch(`http://localhost:3000/users/${editingUser.id}/password`, {
+        const passwordResponse = await fetch(`${BASE}/users/${editingUser.id}/password`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -693,7 +695,7 @@ export default function DashboardPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/users', {
+      const response = await fetch(`${BASE}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -727,7 +729,7 @@ export default function DashboardPage() {
   // Work Schedule Management Functions
   const fetchAvailableEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:3000/work-schedule/employees/available');
+      const response = await fetch(`${BASE}/work-schedule/employees/available`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -798,7 +800,7 @@ export default function DashboardPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/work-schedule', {
+      const response = await fetch(`${BASE}/work-schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -872,7 +874,7 @@ export default function DashboardPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/work-schedule/${editingSchedule?.id}`, {
+      const response = await fetch(`${BASE}/work-schedule/${editingSchedule?.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -913,7 +915,7 @@ export default function DashboardPage() {
     if (!scheduleToDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/work-schedule/${scheduleToDelete.id}`, {
+      const response = await fetch(`${BASE}/work-schedule/${scheduleToDelete.id}`, {
         method: 'DELETE',
       });
 

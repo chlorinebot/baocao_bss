@@ -121,12 +121,10 @@ export default function ReportForm() {
 
         // Lấy vai trò người dùng
         try {
-          const roleResponse = await fetch(`http://localhost:3000/work-schedule/user/${userId}/role`);
+          const roleResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:3000`}/work-schedule/user/${userId}/role`);
           if (roleResponse.ok) {
             const roleData = await roleResponse.json();
-            if (roleData.success) {
-              setUserRole(roleData.data.role || 'Chưa được phân công');
-            }
+            roleData.success && setUserRole(roleData.data.role || 'Chưa được phân công');
           }
         } catch (roleError) {
           console.error('Lỗi khi lấy vai trò:', roleError);

@@ -51,6 +51,7 @@ export declare class WorkScheduleController {
         message: string;
         data: {
             role: string;
+            roleLetter?: string;
             scheduleId: number | null;
         };
         error?: undefined;

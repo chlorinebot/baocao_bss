@@ -220,14 +220,14 @@ export class ReportsService {
     console.log(`📝 Nội dung báo cáo:`, content?.substring(0, 200) + (content?.length > 200 ? '...' : ''));
     
     try {
-      // Kiểm tra quyền tạo báo cáo
-      const permissionCheck = await this.canCreateReport(id_user);
+    // Kiểm tra quyền tạo báo cáo
+    const permissionCheck = await this.canCreateReport(id_user);
       console.log(`🔐 Kết quả kiểm tra quyền:`, permissionCheck);
-      
-      if (!permissionCheck.canCreate) {
+    
+    if (!permissionCheck.canCreate) {
         console.log(`❌ Từ chối tạo báo cáo: ${permissionCheck.reason}`);
-        throw new ForbiddenException(permissionCheck.reason);
-      }
+      throw new ForbiddenException(permissionCheck.reason);
+    }
 
       // Lấy thông tin ca làm việc thực tế từ user schedule
       const today = new Date();
@@ -292,8 +292,8 @@ export class ReportsService {
             // Ca đêm đặc biệt: kết thúc 06:00 sáng hôm sau
             if (currentHour < 6 || (currentHour === 6 && currentMinute <= 30)) {
               console.log(`⏰ Sử dụng ca đêm (thời gian gia hạn) cho báo cáo`);
-              const shiftDate = new Date();
-              shiftDate.setHours(0, 0, 0, 0);
+    const shiftDate = new Date();
+    shiftDate.setHours(0, 0, 0, 0);
               
               const report = this.reportRepository.create({ 
                 id_user, 
@@ -321,13 +321,13 @@ export class ReportsService {
       console.log(`⏰ Loại ca hiện tại từ rotation: ${shiftType}`);
       console.log(`📅 Ngày ca: ${shiftDate.toISOString().split('T')[0]}`);
 
-      const report = this.reportRepository.create({ 
-        id_user, 
-        content,
-        shift_type: shiftType,
-        shift_date: shiftDate
-      });
-      
+    const report = this.reportRepository.create({ 
+      id_user, 
+      content,
+      shift_type: shiftType,
+      shift_date: shiftDate
+    });
+    
       console.log(`💾 Đang lưu báo cáo vào database...`);
       
       const savedReport = await this.reportRepository.save(report);

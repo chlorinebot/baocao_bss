@@ -126,7 +126,8 @@ function LoginForm() {
 
       console.log('🚀 Đang gửi request đăng nhập...');
       
-      const response = await fetch('http://localhost:3000/auth/login', {
+      const BASE = process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:3000`;
+      const response = await fetch(`${BASE}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
