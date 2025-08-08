@@ -45,6 +45,31 @@ interface ReportPermission {
   isWorkingTime?: boolean;
 }
 
+interface WorkSchedule {
+  id: number;
+  month: number;
+  year: number;
+  schedule_data: Array<{
+    date: number;
+    shifts: {
+      morning: { role: string; employee_name: string };
+      afternoon: { role: string; employee_name: string };
+      evening: { role: string; employee_name: string };
+    };
+  }>;
+}
+
+interface ReportStatus {
+  [key: string]: boolean; // key format: "YYYY-MM-DD-shift" (e.g., "2025-08-07-afternoon")
+}
+
+interface ShiftInfo {
+  type: 'morning' | 'afternoon' | 'evening';
+  name: string;
+  time: string;
+  isPreviousDay?: boolean;
+}
+
 export default function UserPage() {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
@@ -76,6 +101,13 @@ export default function UserPage() {
   // Thêm state cho quyền tạo báo cáo
   const [reportPermission, setReportPermission] = useState<ReportPermission | null>(null);
   const [checkingPermission, setCheckingPermission] = useState(false);
+
+  // Thêm state cho lịch làm việc
+  const [workSchedule, setWorkSchedule] = useState<WorkSchedule | null>(null);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [reportStatus, setReportStatus] = useState<ReportStatus>({});
 
   useEffect(() => {
     // Cập nhật thời gian mỗi giây
@@ -177,47 +209,111 @@ export default function UserPage() {
 
   // Thêm hàm kiểm tra quyền tạo báo cáo
   const checkReportPermission = async (userId: number) => {
-    setCheckingPermission(true);
     try {
-      const token = localStorage.getItem('token');
+      setCheckingPermission(true);
+      
       const response = await fetch(`/api/reports/can-create/${userId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && !data.error) {
+        setReportPermission({
+          canCreate: data.canCreate,
+          reason: data.reason,
+          currentShift: data.currentShift,
+          shiftTime: data.shiftTime,
+          isWorkingTime: data.isWorkingTime
+        });
+      } else {
+        setReportPermission({
+          canCreate: false,
+          reason: data.error || data.reason || 'Không thể kiểm tra quyền tạo báo cáo'
+        });
+      }
+    } catch (error) {
+      console.error('Error checking report permission:', error);
+      setReportPermission({
+        canCreate: false,
+        reason: 'Lỗi kết nối khi kiểm tra quyền tạo báo cáo'
+      });
+    } finally {
+      setCheckingPermission(false);
+    }
+  };
+
+  // Hàm lấy lịch làm việc theo tháng
+  const fetchWorkSchedule = async (month: number, year: number) => {
+    try {
+      setLoadingSchedule(true);
+      
+      const response = await fetch(`http://localhost:3000/monthly-schedules/${year}/${month}`);
+      const data = await response.json();
+
+      if (response.ok && data.success && data.data) {
+        setWorkSchedule(data.data);
+        // Fetch report status for this month
+        if (userInfo) {
+          await fetchReportStatus(userInfo.id, month, year);
+        }
+      } else {
+        setWorkSchedule(null);
+        console.log('Không có dữ liệu lịch làm việc cho tháng', month, 'năm', year);
+      }
+    } catch (error) {
+      console.error('Error fetching work schedule:', error);
+      setWorkSchedule(null);
+    } finally {
+      setLoadingSchedule(false);
+    }
+  };
+
+  // Hàm kiểm tra trạng thái báo cáo cho tháng
+  const fetchReportStatus = async (userId: number, month: number, year: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/reports?user_id=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setReportPermission({
-          canCreate: data.canCreate || false,
-          reason: data.reason || '',
-          currentShift: data.currentShift || '',
-          shiftTime: data.shiftTime || '',
-          isWorkingTime: data.isWorkingTime || false
+        const reports = await response.json();
+        const statusMap: ReportStatus = {};
+
+        // Lọc báo cáo theo tháng/năm và tạo status map
+        reports.forEach((report: Report) => {
+          try {
+            const parsedContent = JSON.parse(report.content);
+            if (parsedContent.date && parsedContent.shift_type) {
+              const reportDate = new Date(parsedContent.date);
+              const reportMonth = reportDate.getMonth() + 1;
+              const reportYear = reportDate.getFullYear();
+              
+              if (reportMonth === month && reportYear === year) {
+                const dateStr = reportDate.toISOString().split('T')[0];
+                const shiftType = parsedContent.shift_type.toLowerCase();
+                const key = `${dateStr}-${shiftType}`;
+                statusMap[key] = true;
+              }
+            }
+          } catch (e) {
+            // Ignore parsing errors
+          }
         });
-      } else {
-        const errorData = await response.json();
-        setReportPermission({
-          canCreate: false,
-          reason: errorData.error || 'Không thể kiểm tra quyền tạo báo cáo',
-          currentShift: '',
-          shiftTime: '',
-          isWorkingTime: false
-        });
+
+        setReportStatus(statusMap);
       }
     } catch (error) {
-      console.error('Lỗi khi kiểm tra quyền tạo báo cáo:', error);
-      setReportPermission({
-        canCreate: false,
-        reason: 'Lỗi kết nối khi kiểm tra quyền tạo báo cáo',
-        currentShift: '',
-        shiftTime: '',
-        isWorkingTime: false
-      });
-    } finally {
-      setCheckingPermission(false);
+      console.error('Error fetching report status:', error);
+      setReportStatus({});
     }
   };
 
@@ -375,6 +471,11 @@ export default function UserPage() {
     if (section === 'report-history' && userInfo) {
       fetchUserReports(userInfo.id);
     }
+    
+    // Fetch lịch làm việc khi chuyển sang section work-schedule
+    if (section === 'work-schedule') {
+      fetchWorkSchedule(selectedMonth, selectedYear);
+    }
   };
 
   const handleViewReport = (reportId: number) => {
@@ -504,6 +605,48 @@ export default function UserPage() {
     setTimeout(() => {
       setShowToast(false);
     }, 3000); // Ẩn toast sau 3 giây
+  };
+
+  // Helper function để kiểm tra trạng thái báo cáo
+  const getReportStatusForShift = (date: number, shiftType: 'morning' | 'afternoon' | 'evening') => {
+    const dateStr = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
+    const key = `${dateStr}-${shiftType}`;
+    return reportStatus[key] || false;
+  };
+
+  // Helper function để check nếu ca đã qua
+  const isShiftPast = (date: number, shiftType: 'morning' | 'afternoon' | 'evening') => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Tạo datetime cho ca làm việc
+    const shiftDate = new Date(selectedYear, selectedMonth - 1, date);
+    
+    // Xử lý từng loại ca
+    switch (shiftType) {
+      case 'morning':
+        // Ca sáng: 6:00-14:00, kết thúc 14:00 cùng ngày
+        const morningEndTime = new Date(shiftDate);
+        morningEndTime.setHours(14, 0, 0, 0);
+        return now >= morningEndTime;
+        
+      case 'afternoon':
+        // Ca chiều: 14:00-22:00, kết thúc 22:00 cùng ngày  
+        const afternoonEndTime = new Date(shiftDate);
+        afternoonEndTime.setHours(22, 0, 0, 0);
+        return now >= afternoonEndTime;
+        
+      case 'evening':
+        // Ca đêm: 22:00-06:30 ngày hôm sau
+        const eveningEndTime = new Date(shiftDate);
+        eveningEndTime.setDate(shiftDate.getDate() + 1); // Ngày hôm sau
+        eveningEndTime.setHours(6, 30, 0, 0); // 6:30 sáng
+        return now >= eveningEndTime;
+        
+      default:
+        return false;
+    }
   };
 
   // Hàm format thông tin ca làm việc để hiển thị
@@ -655,6 +798,15 @@ export default function UserPage() {
                 </li>
                 <li className={styles.sidebarItem}>
                   <button 
+                    className={`${styles.sidebarButton} ${activeSection === 'work-schedule' ? styles.active : ''}`}
+                    onClick={() => handleSidebarClick('work-schedule')}
+                  >
+                    <i className="bi bi-calendar3" style={{ marginRight: '8px' }}></i>
+                    <span>Xem lịch làm việc</span>
+                  </button>
+                </li>
+                <li className={styles.sidebarItem}>
+                  <button 
                     className={`${styles.sidebarButton} ${activeSection === 'profile' ? styles.active : ''}`}
                     onClick={() => handleSidebarClick('profile')}
                   >
@@ -723,6 +875,20 @@ export default function UserPage() {
                           onClick={() => setActiveSection('profile')}
                         >
                           Chỉnh sửa
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className={styles.featureItem}>
+                      <div className={styles.featureIcon}><i className="bi bi-calendar3"></i></div>
+                      <div className={styles.featureContent}>
+                        <h4>Xem lịch làm việc</h4>
+                        <p>Xem lịch phân công ca làm việc hàng tháng</p>
+                        <button 
+                          className={styles.featureButton}
+                          onClick={() => setActiveSection('work-schedule')}
+                        >
+                          Xem lịch
                         </button>
                       </div>
                     </div>
@@ -1068,6 +1234,181 @@ export default function UserPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'work-schedule' && (
+            <div className={styles.sectionContent}>
+              <h2 className={styles.sectionTitle}>Lịch làm việc</h2>
+              
+              {/* Month/Year Selector */}
+              <div className={styles.scheduleControls}>
+                <div className={styles.monthSelector}>
+                  <select 
+                    className={styles.formSelect}
+                    value={selectedMonth}
+                    onChange={(e) => {
+                      const newMonth = parseInt(e.target.value);
+                      setSelectedMonth(newMonth);
+                      fetchWorkSchedule(newMonth, selectedYear);
+                    }}
+                  >
+                    {Array.from({length: 12}, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        Tháng {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.yearSelector}>
+                  <select 
+                    className={styles.formSelect}
+                    value={selectedYear}
+                    onChange={(e) => {
+                      const newYear = parseInt(e.target.value);
+                      setSelectedYear(newYear);
+                      fetchWorkSchedule(selectedMonth, newYear);
+                    }}
+                  >
+                    {Array.from({length: 5}, (_, i) => {
+                      const year = new Date().getFullYear() - 2 + i;
+                      return (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                <button 
+                  className={styles.refreshButton}
+                  onClick={() => fetchWorkSchedule(selectedMonth, selectedYear)}
+                  disabled={loadingSchedule}
+                >
+                  <i className="bi bi-arrow-clockwise"></i>
+                  {loadingSchedule ? 'Đang tải...' : 'Tải lại'}
+                </button>
+              </div>
+
+              {/* Schedule Content */}
+              <div className={styles.scheduleContent}>
+                {loadingSchedule ? (
+                  <div className={styles.loadingMessage}>
+                    <i className="bi bi-hourglass-split"></i>
+                    <span>Đang tải lịch làm việc...</span>
+                  </div>
+                ) : workSchedule ? (
+                  <div className={styles.scheduleGrid}>
+                    <div className={styles.scheduleHeader}>
+                      <h3>Lịch làm việc tháng {selectedMonth}/{selectedYear}</h3>
+                      <p>Vai trò của bạn: <strong>{userRole?.role || 'Chưa xác định'}</strong></p>
+                    </div>
+                    
+                    <div className={styles.calendarGrid}>
+                      {workSchedule.schedule_data.map((day) => {
+                        const currentUserRole = userRole?.role?.split(' ')[2]; // Lấy A, B, C, D từ "Nhân viên A"
+                        const userShifts: ShiftInfo[] = [];
+                        
+                        if (day.shifts.morning?.role === currentUserRole) {
+                          userShifts.push({ type: 'morning', name: 'Sáng', time: '06:00-14:00' });
+                        }
+                        if (day.shifts.afternoon?.role === currentUserRole) {
+                          userShifts.push({ type: 'afternoon', name: 'Chiều', time: '14:00-22:00' });
+                        }
+                        if (day.shifts.evening?.role === currentUserRole) {
+                          userShifts.push({ type: 'evening', name: 'Đêm', time: '22:00-06:00' });
+                        }
+                        
+                        // Kiểm tra ca đêm của ngày hôm trước (nếu ngày hiện tại nghỉ)
+                        const now = new Date();
+                        const currentHour = now.getHours();
+                        const currentMinute = now.getMinutes();
+                        const isCurrentlyInPreviousEveningShift = 
+                          userShifts.length === 0 && // Ngày hiện tại nghỉ
+                          (currentHour < 6 || (currentHour === 6 && currentMinute < 30)) && // Đang trong khung giờ ca đêm
+                          selectedMonth === new Date().getMonth() + 1 && 
+                          selectedYear === new Date().getFullYear() &&
+                          day.date === new Date().getDate(); // Là ngày hiện tại
+                        
+                        // Nếu đang trong ca đêm của ngày hôm trước
+                        if (isCurrentlyInPreviousEveningShift) {
+                          const previousDay = workSchedule.schedule_data.find(d => d.date === day.date - 1);
+                          if (previousDay && previousDay.shifts.evening?.role === currentUserRole) {
+                            userShifts.push({ 
+                              type: 'evening', 
+                              name: 'Đêm (tiếp tục)', 
+                              time: '22:00-06:30',
+                              isPreviousDay: true 
+                            });
+                          }
+                        }
+                        
+                        const isToday = day.date === new Date().getDate() && 
+                                       selectedMonth === new Date().getMonth() + 1 && 
+                                       selectedYear === new Date().getFullYear();
+                        
+                        return (
+                          <div 
+                            key={day.date} 
+                            className={`${styles.dayCard} ${isToday ? styles.today : ''} ${userShifts.length === 0 ? styles.dayOff : ''}`}
+                          >
+                            <div className={styles.dayNumber}>{day.date}</div>
+                            <div className={styles.dayShifts}>
+                              {userShifts.length > 0 ? (
+                                userShifts.map((shift, index) => {
+                                  // Đối với ca đêm tiếp tục, kiểm tra trạng thái của ngày hôm trước
+                                  const checkDate = shift.isPreviousDay ? day.date - 1 : day.date;
+                                  const isPast = isShiftPast(checkDate, shift.type);
+                                  const hasReport = getReportStatusForShift(checkDate, shift.type);
+                                  
+                                  return (
+                                    <div key={index} className={`${styles.shiftBadge} ${styles[shift.type]} ${shift.isPreviousDay ? styles.continuing : ''}`}>
+                                      <div className={styles.shiftContent}>
+                                        <span className={styles.shiftName}>{shift.name}</span>
+                                        <span className={styles.shiftTime}>{shift.time}</span>
+                                      </div>
+                                      {isPast && (
+                                        <div className={styles.reportStatus}>
+                                          {hasReport ? (
+                                            <div className={`${styles.reportStatusIcon} ${styles.success}`} title="Đã tạo báo cáo">
+                                              <i className="bi bi-check-circle-fill"></i>
+                                            </div>
+                                          ) : (
+                                            <div className={`${styles.reportStatusIcon} ${styles.error}`} title="Chưa tạo báo cáo">
+                                              <i className="bi bi-x-circle-fill"></i>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <div className={styles.dayOffBadge}>
+                                  <span>Nghỉ</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.noScheduleMessage}>
+                    <i className="bi bi-calendar-x"></i>
+                    <h3>Chưa có lịch làm việc</h3>
+                    <p>Không có dữ liệu lịch làm việc cho tháng {selectedMonth}/{selectedYear}</p>
+                    <button 
+                      className={styles.refreshButton}
+                      onClick={() => fetchWorkSchedule(selectedMonth, selectedYear)}
+                    >
+                      <i className="bi bi-arrow-clockwise"></i>
+                      Thử lại
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}

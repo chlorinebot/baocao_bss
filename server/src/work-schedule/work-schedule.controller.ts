@@ -132,8 +132,85 @@ export class WorkScheduleController {
     }
   }
 
-  // Thống kê phân công
-  @Get('stats/report')
+  // DEBUG: Xóa tất cả work_schedule
+  @Delete('debug/clear-all')
+  async clearAllWorkSchedules() {
+    try {
+      console.log('🗑️ DEBUG: Xóa tất cả work_schedule');
+      await this.workScheduleService.clearAllWorkSchedules();
+      return {
+        success: true,
+        message: 'Đã xóa tất cả work_schedule'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Lỗi khi xóa work_schedule',
+        error: error.message
+      };
+    }
+  }
+
+  // DEBUG: Kiểm tra database
+  @Get('debug/check-db')
+  async debugCheckDatabase() {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const schedules = await this.workScheduleService.findAll();
+      const todaySchedule = await this.workScheduleService.findByDate(today.toISOString().split('T')[0]);
+      
+      return {
+        success: true,
+        data: {
+          today: today.toISOString().split('T')[0],
+          totalSchedules: schedules.length,
+          todaySchedules: todaySchedule.length,
+          allSchedules: schedules,
+          todayScheduleDetail: todaySchedule
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  @Post('debug/create-yesterday-schedule')
+  async createYesterdaySchedule() {
+    try {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
+      
+      const createData = {
+        employee_a: 5,
+        employee_b: 7,
+        employee_c: 4,
+        employee_d: 8,
+        activation_date: yesterday
+      };
+      
+      const newSchedule = await this.workScheduleService.create(createData);
+      
+      return {
+        success: true,
+        message: `Đã tạo schedule cho ngày ${yesterday.toISOString().split('T')[0]}`,
+        data: newSchedule
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Lấy thống kê phân công theo tuần/tháng
+  @Get('stats')
   async getScheduleStats(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string

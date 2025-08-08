@@ -122,6 +122,73 @@ let WorkScheduleController = class WorkScheduleController {
             };
         }
     }
+    async clearAllWorkSchedules() {
+        try {
+            console.log('🗑️ DEBUG: Xóa tất cả work_schedule');
+            await this.workScheduleService.clearAllWorkSchedules();
+            return {
+                success: true,
+                message: 'Đã xóa tất cả work_schedule'
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                message: 'Lỗi khi xóa work_schedule',
+                error: error.message
+            };
+        }
+    }
+    async debugCheckDatabase() {
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const schedules = await this.workScheduleService.findAll();
+            const todaySchedule = await this.workScheduleService.findByDate(today.toISOString().split('T')[0]);
+            return {
+                success: true,
+                data: {
+                    today: today.toISOString().split('T')[0],
+                    totalSchedules: schedules.length,
+                    todaySchedules: todaySchedule.length,
+                    allSchedules: schedules,
+                    todayScheduleDetail: todaySchedule
+                }
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+    async createYesterdaySchedule() {
+        try {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            yesterday.setHours(0, 0, 0, 0);
+            const createData = {
+                employee_a: 5,
+                employee_b: 7,
+                employee_c: 4,
+                employee_d: 8,
+                activation_date: yesterday
+            };
+            const newSchedule = await this.workScheduleService.create(createData);
+            return {
+                success: true,
+                message: `Đã tạo schedule cho ngày ${yesterday.toISOString().split('T')[0]}`,
+                data: newSchedule
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
     async getScheduleStats(startDate, endDate) {
         try {
             const stats = await this.workScheduleService.getScheduleStats(startDate, endDate);
@@ -248,7 +315,25 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], WorkScheduleController.prototype, "getUserCurrentShift", null);
 __decorate([
-    (0, common_1.Get)('stats/report'),
+    (0, common_1.Delete)('debug/clear-all'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], WorkScheduleController.prototype, "clearAllWorkSchedules", null);
+__decorate([
+    (0, common_1.Get)('debug/check-db'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], WorkScheduleController.prototype, "debugCheckDatabase", null);
+__decorate([
+    (0, common_1.Post)('debug/create-yesterday-schedule'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], WorkScheduleController.prototype, "createYesterdaySchedule", null);
+__decorate([
+    (0, common_1.Get)('stats'),
     __param(0, (0, common_1.Query)('startDate')),
     __param(1, (0, common_1.Query)('endDate')),
     __metadata("design:type", Function),

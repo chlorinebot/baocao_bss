@@ -17,8 +17,8 @@ export declare class MonthlySchedulesService {
         data?: undefined;
     }>;
     updateMonthlySchedule(id: number, scheduleData: string, updatedBy: number): Promise<any>;
-    deleteMonthlySchedule(id: number, deletedBy: number): Promise<{
-        message: string;
-    }>;
+    createTestData(): Promise<void>;
+    clearAllMonthlySchedules(): Promise<void>;
+    deleteMonthlySchedule(id: number): Promise<any>;
     getScheduleById(id: number): Promise<any>;
 }

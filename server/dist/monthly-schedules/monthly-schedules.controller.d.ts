@@ -61,9 +61,25 @@ export declare class MonthlySchedulesController {
         error: any;
         data?: undefined;
     }>;
-    deleteMonthlySchedule(id: number, deleteData?: {
-        deleted_by?: number;
-    }): Promise<{
+    deleteMonthlySchedule(id: number): Promise<{
+        success: boolean;
+        message: string;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: any;
+        message?: undefined;
+    }>;
+    createTestData(): Promise<{
+        success: boolean;
+        message: string;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: any;
+        message?: undefined;
+    }>;
+    clearAllMonthlySchedules(): Promise<{
         success: boolean;
         message: string;
         error?: undefined;

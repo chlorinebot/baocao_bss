@@ -203,17 +203,40 @@ let MonthlySchedulesService = class MonthlySchedulesService {
             throw error;
         }
     }
-    async deleteMonthlySchedule(id, deletedBy) {
-        console.log(`🔍 [MonthlySchedulesService] deleteMonthlySchedule called with id=${id}, deletedBy=${deletedBy}`);
+    async createTestData() {
+        console.log('🧪 Tạo dữ liệu test cho monthly_work_schedules tháng 8/2025');
+        await this.dataSource.query('DELETE FROM monthly_work_schedules WHERE month = 8 AND year = 2025');
+        const scheduleData = [
+            { day: 1, morning: 'A', afternoon: 'B', evening: 'C' },
+            { day: 2, morning: 'B', afternoon: 'C', evening: 'D' },
+            { day: 3, morning: 'C', afternoon: 'D', evening: 'A' },
+            { day: 4, morning: 'D', afternoon: 'A', evening: 'B' },
+            { day: 5, morning: 'A', afternoon: 'B', evening: 'C' },
+            { day: 6, morning: 'B', afternoon: 'C', evening: 'D' },
+            { day: 7, morning: 'C', afternoon: 'B', evening: 'A' },
+            { day: 8, morning: 'D', afternoon: 'A', evening: 'B' },
+            { day: 9, morning: 'A', afternoon: 'B', evening: 'C' },
+            { day: 10, morning: 'B', afternoon: 'C', evening: 'D' }
+        ];
+        const query = `
+      INSERT INTO monthly_work_schedules (month, year, schedule_data, created_by, created_at, updated_at)
+      VALUES (8, 2025, ?, 1, NOW(), NOW())
+    `;
+        await this.dataSource.query(query, [JSON.stringify(scheduleData)]);
+        console.log('✅ Đã tạo dữ liệu test thành công');
+    }
+    async clearAllMonthlySchedules() {
+        console.log('🗑️ Xóa tất cả records trong monthly_work_schedules');
+        const query = 'DELETE FROM monthly_work_schedules';
+        await this.dataSource.query(query);
+    }
+    async deleteMonthlySchedule(id) {
+        console.log(`🗑️ [MonthlySchedulesService] deleteMonthlySchedule called with id: ${id}`);
         try {
-            const query = 'CALL DeleteMonthlySchedule(?, ?)';
-            console.log('📝 [MonthlySchedulesService] Executing query:', query, 'with params:', [id, deletedBy]);
-            const result = await this.dataSource.query(query, [id, deletedBy]);
+            const query = 'DELETE FROM monthly_work_schedules WHERE id = ?';
+            const result = await this.dataSource.query(query, [id]);
             console.log('✅ [MonthlySchedulesService] Delete result:', result);
-            if (result[0] && result[0][0]) {
-                return { message: result[0][0].message };
-            }
-            throw new Error('Không thể xóa phân công');
+            return { message: 'Xóa thành công' };
         }
         catch (error) {
             console.error('❌ [MonthlySchedulesService] Error in deleteMonthlySchedule:', error);

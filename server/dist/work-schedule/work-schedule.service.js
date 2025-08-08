@@ -18,12 +18,15 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const work_schedule_entity_1 = require("../entities/work-schedule.entity");
 const user_entity_1 = require("../entities/user.entity");
+const typeorm_3 = require("typeorm");
 let WorkScheduleService = class WorkScheduleService {
     workScheduleRepository;
     userRepository;
-    constructor(workScheduleRepository, userRepository) {
+    dataSource;
+    constructor(workScheduleRepository, userRepository, dataSource) {
         this.workScheduleRepository = workScheduleRepository;
         this.userRepository = userRepository;
+        this.dataSource = dataSource;
     }
     async findAll() {
         const schedules = await this.workScheduleRepository.find({
@@ -150,76 +153,118 @@ let WorkScheduleService = class WorkScheduleService {
     }
     async getUserRole(userId) {
         try {
-            const currentSchedule = await this.workScheduleRepository.findOne({
-                where: { active: true },
-                order: { created_date: 'DESC' }
-            });
-            if (!currentSchedule) {
-                return { role: 'Chưa được phân công', scheduleId: null };
+            console.log(`🔍 getUserRole: Lấy vai trò cho user ${userId}`);
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            let searchDate = new Date();
+            if (currentHour < 6 || (currentHour === 6 && currentMinute < 30)) {
+                searchDate.setDate(searchDate.getDate() - 1);
+                console.log(`🌙 Đang trong ca đêm, tìm schedule của ngày hôm trước: ${searchDate.toISOString().split('T')[0]}`);
             }
-            let role = 'Chưa được phân công';
-            if (currentSchedule.employee_a === userId) {
-                role = 'Nhân viên A';
+            searchDate.setHours(0, 0, 0, 0);
+            console.log(`📅 Ngày hiện tại (raw): ${new Date().toISOString()}`);
+            console.log(`📅 Ngày tìm kiếm: ${searchDate.toISOString().split('T')[0]}`);
+            const currentMonth = searchDate.getMonth() + 1;
+            const currentYear = searchDate.getFullYear();
+            const currentDay = searchDate.getDate();
+            console.log(`🔍 Tìm monthly_work_schedules cho tháng ${currentMonth}/${currentYear}, ngày ${currentDay}`);
+            try {
+                const monthlyQuery = `
+          SELECT id, month, year, schedule_data 
+          FROM monthly_work_schedules 
+          WHERE month = ? AND year = ?
+          ORDER BY created_at DESC 
+          LIMIT 1
+        `;
+                const monthlyResult = await this.dataSource.query(monthlyQuery, [currentMonth, currentYear]);
+                if (monthlyResult && monthlyResult.length > 0) {
+                    const monthlySchedule = monthlyResult[0];
+                    console.log(`✅ Tìm thấy monthly_work_schedules ID: ${monthlySchedule.id}`);
+                    let scheduleData = [];
+                    if (monthlySchedule.schedule_data) {
+                        if (typeof monthlySchedule.schedule_data === 'string') {
+                            scheduleData = JSON.parse(monthlySchedule.schedule_data);
+                        }
+                        else if (Array.isArray(monthlySchedule.schedule_data)) {
+                            scheduleData = monthlySchedule.schedule_data;
+                        }
+                    }
+                    const daySchedule = scheduleData.find((day) => day.date === currentDay);
+                    if (daySchedule && daySchedule.shifts) {
+                        console.log(`🎯 Tìm thấy schedule cho ngày ${currentDay}:`, daySchedule);
+                        if (daySchedule.shifts.morning && this.getUserByRole(daySchedule.shifts.morning.role) === userId) {
+                            const roleName = daySchedule.shifts.morning.employee_name || `Nhân viên ${daySchedule.shifts.morning.role}`;
+                            console.log(`✅ User ${userId} có role: ${roleName} (morning)`);
+                            return { role: roleName, scheduleId: monthlySchedule.id };
+                        }
+                        if (daySchedule.shifts.afternoon && this.getUserByRole(daySchedule.shifts.afternoon.role) === userId) {
+                            const roleName = daySchedule.shifts.afternoon.employee_name || `Nhân viên ${daySchedule.shifts.afternoon.role}`;
+                            console.log(`✅ User ${userId} có role: ${roleName} (afternoon)`);
+                            return { role: roleName, scheduleId: monthlySchedule.id };
+                        }
+                        if (daySchedule.shifts.evening && this.getUserByRole(daySchedule.shifts.evening.role) === userId) {
+                            const roleName = daySchedule.shifts.evening.employee_name || `Nhân viên ${daySchedule.shifts.evening.role}`;
+                            console.log(`✅ User ${userId} có role: ${roleName} (evening)`);
+                            return { role: roleName, scheduleId: monthlySchedule.id };
+                        }
+                        console.log(`😴 User ${userId} nghỉ ngày ${currentDay} theo monthly_work_schedules`);
+                        return { role: 'Nghỉ', scheduleId: monthlySchedule.id };
+                    }
+                }
             }
-            else if (currentSchedule.employee_b === userId) {
-                role = 'Nhân viên B';
+            catch (error) {
+                console.error(`❌ Lỗi khi query monthly_work_schedules:`, error);
             }
-            else if (currentSchedule.employee_c === userId) {
-                role = 'Nhân viên C';
-            }
-            else if (currentSchedule.employee_d === userId) {
-                role = 'Nhân viên D';
-            }
-            return { role, scheduleId: currentSchedule.id };
+            console.log(`❌ Không tìm thấy dữ liệu trong monthly_work_schedules`);
+            return { role: 'Chưa được phân công', scheduleId: null };
         }
         catch (error) {
-            console.error('Lỗi khi lấy vai trò user:', error);
+            console.error(`❌ Lỗi khi lấy vai trò user ${userId}:`, error);
             return { role: 'Chưa được phân công', scheduleId: null };
         }
     }
     async getUserCurrentShift(userId) {
-        try {
-            const userRole = await this.getUserRole(userId);
-            if (userRole.role === 'Chưa được phân công') {
-                return {
-                    role: userRole.role,
-                    shift: null,
-                    shiftTime: null,
-                    scheduleId: null
-                };
-            }
-            const now = new Date();
-            const currentHour = now.getHours();
-            let shift = '';
-            let shiftTime = '';
-            if (currentHour >= 6 && currentHour < 14) {
-                shift = 'Ca Sáng';
-                shiftTime = '06:00 - 14:00';
-            }
-            else if (currentHour >= 14 && currentHour < 22) {
-                shift = 'Ca Chiều';
-                shiftTime = '14:00 - 22:00';
-            }
-            else {
-                shift = 'Ca Đêm';
-                shiftTime = '22:00 - 06:00';
-            }
+        console.log(`🔍 getUserCurrentShift: Lấy ca trực hiện tại cho user ${userId}`);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const userSchedule = await this.getUserScheduleForDate(userId, today);
+        if (!userSchedule.isAssigned) {
+            console.log(`❌ User ${userId} chưa được phân công ca làm việc`);
             return {
-                role: userRole.role,
-                shift: shift,
-                shiftTime: shiftTime,
-                scheduleId: userRole.scheduleId
-            };
-        }
-        catch (error) {
-            console.error('Lỗi khi lấy ca trực hiện tại:', error);
-            return {
-                role: 'Chưa được phân công',
+                role: userSchedule.role,
                 shift: null,
-                shiftTime: null,
-                scheduleId: null
+                shiftTime: 'Chưa được phân công ca làm việc',
+                scheduleId: userSchedule.scheduleId
             };
         }
+        const currentShift = userSchedule.assignedShifts.find(shift => shift.isCurrentShift);
+        if (currentShift) {
+            console.log(`✅ User ${userId} đang trong ca: ${currentShift.shiftName}`);
+            return {
+                role: userSchedule.role,
+                shift: currentShift.shiftName,
+                shiftTime: currentShift.shiftTime,
+                scheduleId: userSchedule.scheduleId
+            };
+        }
+        if (userSchedule.assignedShifts.length > 0) {
+            const nextShift = userSchedule.assignedShifts[0];
+            console.log(`⏰ User ${userId} được phân công ca: ${nextShift.shiftName} (không đang trong ca)`);
+            return {
+                role: userSchedule.role,
+                shift: nextShift.shiftName,
+                shiftTime: nextShift.shiftTime,
+                scheduleId: userSchedule.scheduleId
+            };
+        }
+        console.log(`😴 User ${userId} nghỉ ngày hôm nay`);
+        return {
+            role: userSchedule.role,
+            shift: 'Nghỉ',
+            shiftTime: 'Nghỉ ngày hôm nay',
+            scheduleId: userSchedule.scheduleId
+        };
     }
     async getScheduleStats(startDate, endDate) {
         const schedules = await this.workScheduleRepository
@@ -263,105 +308,127 @@ let WorkScheduleService = class WorkScheduleService {
     }
     async getUserScheduleForDate(userId, date = new Date()) {
         try {
-            const targetDate = new Date(date);
-            targetDate.setHours(0, 0, 0, 0);
-            const schedule = await this.workScheduleRepository.findOne({
-                where: {
-                    activation_date: targetDate
-                },
-                relations: ['employeeA', 'employeeB', 'employeeC', 'employeeD'],
-                order: { created_date: 'DESC' }
-            });
-            if (!schedule) {
-                return {
-                    isAssigned: false,
-                    role: 'Chưa được phân công',
-                    assignedShifts: [],
-                    scheduleId: null
-                };
-            }
-            let role = 'Chưa được phân công';
-            let rolePosition = null;
-            if (schedule.employee_a === userId) {
-                role = 'Nhân viên A';
-                rolePosition = 'A';
-            }
-            else if (schedule.employee_b === userId) {
-                role = 'Nhân viên B';
-                rolePosition = 'B';
-            }
-            else if (schedule.employee_c === userId) {
-                role = 'Nhân viên C';
-                rolePosition = 'C';
-            }
-            else if (schedule.employee_d === userId) {
-                role = 'Nhân viên D';
-                rolePosition = 'D';
-            }
-            if (!rolePosition) {
-                return {
-                    isAssigned: false,
-                    role: 'Chưa được phân công',
-                    assignedShifts: [],
-                    scheduleId: schedule.id
-                };
-            }
-            const assignedShifts = [];
+            console.log(`📅 WorkScheduleService: Lấy lịch làm việc cho user ${userId} ngày ${date.toISOString().split('T')[0]}`);
             const now = new Date();
             const currentHour = now.getHours();
-            switch (rolePosition) {
-                case 'A':
-                    assignedShifts.push({
-                        shiftType: 'morning',
-                        shiftName: 'Ca Sáng',
-                        shiftTime: '06:00 - 14:00',
-                        isCurrentShift: currentHour >= 6 && currentHour < 14
-                    });
-                    break;
-                case 'B':
-                    assignedShifts.push({
-                        shiftType: 'afternoon',
-                        shiftName: 'Ca Chiều',
-                        shiftTime: '14:00 - 22:00',
-                        isCurrentShift: currentHour >= 14 && currentHour < 22
-                    });
-                    break;
-                case 'C':
-                    assignedShifts.push({
-                        shiftType: 'evening',
-                        shiftName: 'Ca Đêm',
-                        shiftTime: '22:00 - 06:00',
-                        isCurrentShift: currentHour >= 22 || currentHour < 6
-                    });
-                    break;
-                case 'D':
-                    assignedShifts.push({
-                        shiftType: 'morning',
-                        shiftName: 'Ca Sáng',
-                        shiftTime: '06:00 - 14:00',
-                        isCurrentShift: currentHour >= 6 && currentHour < 14
-                    }, {
-                        shiftType: 'afternoon',
-                        shiftName: 'Ca Chiều',
-                        shiftTime: '14:00 - 22:00',
-                        isCurrentShift: currentHour >= 14 && currentHour < 22
-                    }, {
-                        shiftType: 'evening',
-                        shiftName: 'Ca Đêm',
-                        shiftTime: '22:00 - 06:00',
-                        isCurrentShift: currentHour >= 22 || currentHour < 6
-                    });
-                    break;
+            const currentMinute = now.getMinutes();
+            let targetDate = new Date(date);
+            if ((currentHour < 6 || (currentHour === 6 && currentMinute < 30)) &&
+                date.toDateString() === now.toDateString()) {
+                targetDate.setDate(targetDate.getDate() - 1);
+                console.log(`🌙 Đang trong ca đêm, tìm schedule của ngày hôm trước: ${targetDate.toISOString().split('T')[0]}`);
             }
+            targetDate.setHours(0, 0, 0, 0);
+            const currentMonth = targetDate.getMonth() + 1;
+            const currentYear = targetDate.getFullYear();
+            const currentDay = targetDate.getDate();
+            console.log(`🔍 Tìm monthly_work_schedules cho tháng ${currentMonth}/${currentYear}, ngày ${currentDay}`);
+            try {
+                const monthlyQuery = `
+          SELECT id, month, year, schedule_data 
+          FROM monthly_work_schedules 
+          WHERE month = ? AND year = ?
+          ORDER BY created_at DESC 
+          LIMIT 1
+        `;
+                const monthlyResult = await this.dataSource.query(monthlyQuery, [currentMonth, currentYear]);
+                console.log(`📋 Monthly schedule result:`, monthlyResult);
+                if (monthlyResult && monthlyResult.length > 0) {
+                    const monthlySchedule = monthlyResult[0];
+                    console.log(`✅ Tìm thấy monthly_work_schedules ID: ${monthlySchedule.id}`);
+                    let scheduleData = [];
+                    if (monthlySchedule.schedule_data) {
+                        if (typeof monthlySchedule.schedule_data === 'string') {
+                            scheduleData = JSON.parse(monthlySchedule.schedule_data);
+                        }
+                        else if (Array.isArray(monthlySchedule.schedule_data)) {
+                            scheduleData = monthlySchedule.schedule_data;
+                        }
+                    }
+                    console.log(`📊 Schedule data length: ${scheduleData.length}`);
+                    const daySchedule = scheduleData.find((day) => day.date === currentDay);
+                    if (daySchedule && daySchedule.shifts) {
+                        console.log(`🎯 Tìm thấy schedule cho ngày ${currentDay}:`, daySchedule);
+                        let userRole = '';
+                        let userRoleName = '';
+                        if (daySchedule.shifts.morning && this.getUserByRole(daySchedule.shifts.morning.role) === userId) {
+                            userRole = daySchedule.shifts.morning.role;
+                            userRoleName = daySchedule.shifts.morning.employee_name || `Nhân viên ${userRole}`;
+                        }
+                        else if (daySchedule.shifts.afternoon && this.getUserByRole(daySchedule.shifts.afternoon.role) === userId) {
+                            userRole = daySchedule.shifts.afternoon.role;
+                            userRoleName = daySchedule.shifts.afternoon.employee_name || `Nhân viên ${userRole}`;
+                        }
+                        else if (daySchedule.shifts.evening && this.getUserByRole(daySchedule.shifts.evening.role) === userId) {
+                            userRole = daySchedule.shifts.evening.role;
+                            userRoleName = daySchedule.shifts.evening.employee_name || `Nhân viên ${userRole}`;
+                        }
+                        if (!userRole) {
+                            console.log(`😴 User ${userId} nghỉ ngày ${currentDay} theo monthly_work_schedules`);
+                            return {
+                                isAssigned: false,
+                                role: 'Nghỉ',
+                                assignedShifts: [],
+                                scheduleId: monthlySchedule.id
+                            };
+                        }
+                        const assignedShifts = [];
+                        const currentHour = now.getHours();
+                        if (daySchedule.shifts.morning && daySchedule.shifts.morning.role === userRole) {
+                            assignedShifts.push({
+                                shiftType: 'morning',
+                                shiftName: 'Ca Sáng',
+                                shiftTime: '06:00 - 14:00',
+                                isCurrentShift: currentHour >= 6 && currentHour < 14
+                            });
+                            console.log(`🌅 User ${userId} được assign Ca Sáng từ monthly_work_schedules`);
+                        }
+                        if (daySchedule.shifts.afternoon && daySchedule.shifts.afternoon.role === userRole) {
+                            assignedShifts.push({
+                                shiftType: 'afternoon',
+                                shiftName: 'Ca Chiều',
+                                shiftTime: '14:00 - 22:00',
+                                isCurrentShift: currentHour >= 14 && currentHour < 22
+                            });
+                            console.log(`🌇 User ${userId} được assign Ca Chiều từ monthly_work_schedules`);
+                        }
+                        if (daySchedule.shifts.evening && daySchedule.shifts.evening.role === userRole) {
+                            assignedShifts.push({
+                                shiftType: 'evening',
+                                shiftName: 'Ca Đêm',
+                                shiftTime: '22:00 - 06:00',
+                                isCurrentShift: currentHour >= 22 || currentHour < 6
+                            });
+                            console.log(`🌙 User ${userId} được assign Ca Đêm từ monthly_work_schedules`);
+                        }
+                        return {
+                            isAssigned: true,
+                            role: userRoleName,
+                            assignedShifts,
+                            scheduleId: monthlySchedule.id
+                        };
+                    }
+                    else {
+                        console.log(`😴 Không có schedule cho ngày ${currentDay} trong monthly_work_schedules`);
+                    }
+                }
+                else {
+                    console.log(`❌ Không có monthly_work_schedules cho tháng ${currentMonth}/${currentYear}`);
+                }
+            }
+            catch (error) {
+                console.error(`❌ Lỗi khi query monthly_work_schedules:`, error);
+            }
+            console.log(`❌ Không tìm thấy dữ liệu trong monthly_work_schedules → Chưa được phân công ca làm việc`);
             return {
-                isAssigned: true,
-                role,
-                assignedShifts,
-                scheduleId: schedule.id
+                isAssigned: false,
+                role: 'Chưa được phân công ca làm việc',
+                assignedShifts: [],
+                scheduleId: null
             };
         }
         catch (error) {
-            console.error('Lỗi khi lấy lịch phân công theo ngày:', error);
+            console.error(`❌ Lỗi getUserScheduleForDate:`, error);
             return {
                 isAssigned: false,
                 role: 'Lỗi hệ thống',
@@ -377,6 +444,19 @@ let WorkScheduleService = class WorkScheduleService {
         }
         return schedule.assignedShifts.some(shift => shift.shiftType === shiftType);
     }
+    getUserByRole(role) {
+        const roleMapping = {
+            'A': 5,
+            'B': 7,
+            'C': 4,
+            'D': 8
+        };
+        return roleMapping[role] || null;
+    }
+    async clearAllWorkSchedules() {
+        console.log('🗑️ Xóa tất cả records trong work_schedule');
+        await this.workScheduleRepository.clear();
+    }
 };
 exports.WorkScheduleService = WorkScheduleService;
 exports.WorkScheduleService = WorkScheduleService = __decorate([
@@ -384,6 +464,7 @@ exports.WorkScheduleService = WorkScheduleService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(work_schedule_entity_1.WorkSchedule)),
     __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        typeorm_3.DataSource])
 ], WorkScheduleService);
 //# sourceMappingURL=work-schedule.service.js.map

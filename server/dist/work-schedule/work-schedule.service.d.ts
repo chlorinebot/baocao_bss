@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 import { WorkSchedule } from '../entities/work-schedule.entity';
 import { User } from '../entities/user.entity';
+import { DataSource } from 'typeorm';
 export interface CreateWorkScheduleDto {
     employee_a: number;
     employee_b: number;
@@ -16,7 +17,8 @@ export interface UpdateWorkScheduleDto {
 export declare class WorkScheduleService {
     private readonly workScheduleRepository;
     private readonly userRepository;
-    constructor(workScheduleRepository: Repository<WorkSchedule>, userRepository: Repository<User>);
+    private readonly dataSource;
+    constructor(workScheduleRepository: Repository<WorkSchedule>, userRepository: Repository<User>, dataSource: DataSource);
     findAll(): Promise<any[]>;
     findOne(id: number): Promise<WorkSchedule>;
     findByDate(date: string): Promise<WorkSchedule[]>;
@@ -51,4 +53,6 @@ export declare class WorkScheduleService {
         scheduleId: number | null;
     }>;
     isUserAssignedToShift(userId: number, shiftType: 'morning' | 'afternoon' | 'evening', date?: Date): Promise<boolean>;
+    private getUserByRole;
+    clearAllWorkSchedules(): Promise<void>;
 }

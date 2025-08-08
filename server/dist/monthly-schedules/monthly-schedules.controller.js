@@ -85,16 +85,37 @@ let MonthlySchedulesController = class MonthlySchedulesController {
             return { success: false, error: error.message };
         }
     }
-    async deleteMonthlySchedule(id, deleteData) {
+    async deleteMonthlySchedule(id) {
         console.log(`🎯 [MonthlySchedulesController] DELETE /monthly-schedules/${id} called`);
-        console.log('📋 [MonthlySchedulesController] Delete data:', deleteData);
         try {
-            const result = await this.monthlySchedulesService.deleteMonthlySchedule(id, deleteData?.deleted_by || 1);
+            const result = await this.monthlySchedulesService.deleteMonthlySchedule(id);
             console.log('✅ [MonthlySchedulesController] deleteMonthlySchedule result:', result);
-            return { success: true, message: result.message };
+            return { success: true, message: 'Xóa phân công hàng tháng thành công' };
         }
         catch (error) {
             console.error('❌ [MonthlySchedulesController] Error in deleteMonthlySchedule:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    async createTestData() {
+        console.log('🧪 [MonthlySchedulesController] DEBUG: Tạo dữ liệu test cho tháng 8/2025');
+        try {
+            await this.monthlySchedulesService.createTestData();
+            return { success: true, message: 'Đã tạo dữ liệu test cho monthly_work_schedules tháng 8/2025' };
+        }
+        catch (error) {
+            console.error('❌ [MonthlySchedulesController] Error creating test data:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    async clearAllMonthlySchedules() {
+        console.log('🗑️ [MonthlySchedulesController] DEBUG: Xóa tất cả monthly_work_schedules');
+        try {
+            await this.monthlySchedulesService.clearAllMonthlySchedules();
+            return { success: true, message: 'Đã xóa tất cả monthly_work_schedules' };
+        }
+        catch (error) {
+            console.error('❌ [MonthlySchedulesController] Error clearing all:', error);
             return { success: false, error: error.message };
         }
     }
@@ -139,11 +160,22 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], MonthlySchedulesController.prototype, "deleteMonthlySchedule", null);
+__decorate([
+    (0, common_1.Post)('debug/create-test-data'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], MonthlySchedulesController.prototype, "createTestData", null);
+__decorate([
+    (0, common_1.Delete)('debug/clear-all'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], MonthlySchedulesController.prototype, "clearAllMonthlySchedules", null);
 exports.MonthlySchedulesController = MonthlySchedulesController = __decorate([
     (0, common_1.Controller)('monthly-schedules'),
     __metadata("design:paramtypes", [monthly_schedules_service_1.MonthlySchedulesService])

@@ -102,18 +102,40 @@ export class MonthlySchedulesController {
 
   // DELETE /monthly-schedules/:id - Xóa phân công hàng tháng
   @Delete(':id')
-  async deleteMonthlySchedule(@Param('id') id: number, @Body() deleteData?: { deleted_by?: number }) {
+  async deleteMonthlySchedule(@Param('id') id: number) {
     console.log(`🎯 [MonthlySchedulesController] DELETE /monthly-schedules/${id} called`);
-    console.log('📋 [MonthlySchedulesController] Delete data:', deleteData);
     try {
-      const result = await this.monthlySchedulesService.deleteMonthlySchedule(
-        id,
-        deleteData?.deleted_by || 1
-      );
+      const result = await this.monthlySchedulesService.deleteMonthlySchedule(id);
       console.log('✅ [MonthlySchedulesController] deleteMonthlySchedule result:', result);
-      return { success: true, message: result.message };
+      return { success: true, message: 'Xóa phân công hàng tháng thành công' };
     } catch (error) {
       console.error('❌ [MonthlySchedulesController] Error in deleteMonthlySchedule:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // DEBUG: Tạo dữ liệu test cho tháng 8/2025
+  @Post('debug/create-test-data')
+  async createTestData() {
+    console.log('🧪 [MonthlySchedulesController] DEBUG: Tạo dữ liệu test cho tháng 8/2025');
+    try {
+      await this.monthlySchedulesService.createTestData();
+      return { success: true, message: 'Đã tạo dữ liệu test cho monthly_work_schedules tháng 8/2025' };
+    } catch (error) {
+      console.error('❌ [MonthlySchedulesController] Error creating test data:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // DEBUG: Xóa tất cả monthly_work_schedules
+  @Delete('debug/clear-all')
+  async clearAllMonthlySchedules() {
+    console.log('🗑️ [MonthlySchedulesController] DEBUG: Xóa tất cả monthly_work_schedules');
+    try {
+      await this.monthlySchedulesService.clearAllMonthlySchedules();
+      return { success: true, message: 'Đã xóa tất cả monthly_work_schedules' };
+    } catch (error) {
+      console.error('❌ [MonthlySchedulesController] Error clearing all:', error);
       return { success: false, error: error.message };
     }
   }

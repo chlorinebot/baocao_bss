@@ -1825,3 +1825,422 @@
     align-self: center;
   }
 } 
+
+/* Work Schedule Styles */
+.scheduleControls {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.monthSelector,
+.yearSelector {
+  min-width: 120px;
+}
+
+.refreshButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #e74c3c 0%, #3498db 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.refreshButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.scheduleContent {
+  min-height: 400px;
+}
+
+.loadingMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+.loadingMessage i {
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+  color: #e74c3c;
+}
+
+.scheduleGrid {
+  width: 100%;
+}
+
+.scheduleHeader {
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f1f3f4;
+}
+
+.scheduleHeader h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.scheduleHeader p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.dayCard {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  transition: all 0.2s ease;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.dayCard:hover {
+  border-color: #e74c3c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dayCard.today {
+  border-color: #e74c3c;
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.05) 0%, rgba(52, 152, 219, 0.05) 100%);
+  font-weight: 600;
+}
+
+.dayCard.dayOff {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  opacity: 0.7;
+}
+
+.dayNumber {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.dayShifts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shiftBadge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.shiftContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.reportStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+}
+
+.reportStatusIcon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  cursor: help;
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.reportStatusIcon::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1));
+  z-index: -1;
+}
+
+.reportStatusIcon:hover {
+  transform: scale(1.15);
+}
+
+.reportStatusIcon i {
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+/* Dấu tích xanh - đã tạo báo cáo */
+.reportStatusIcon:has(.bi-check-circle-fill) {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid #22c55e;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.1);
+}
+
+.reportStatusIcon:has(.bi-check-circle-fill) i {
+  color: #16a34a;
+  filter: drop-shadow(0 0 2px rgba(34, 197, 94, 0.3));
+}
+
+.reportStatusIcon:has(.bi-check-circle-fill):hover {
+  background: rgba(34, 197, 94, 0.25);
+  box-shadow: 0 3px 12px rgba(34, 197, 94, 0.4);
+}
+
+/* Dấu X đỏ - chưa tạo báo cáo */
+.reportStatusIcon:has(.bi-x-circle-fill) {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  animation: pulseError 2s infinite;
+}
+
+@keyframes pulseError {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+}
+
+.reportStatusIcon:has(.bi-x-circle-fill) i {
+  color: #dc2626;
+}
+
+.reportStatusIcon:has(.bi-x-circle-fill):hover {
+  background: rgba(239, 68, 68, 0.25);
+  box-shadow: 0 3px 12px rgba(239, 68, 68, 0.4);
+  animation: none;
+}
+
+/* Fallback classes for browsers that don't support :has() */
+.reportStatusIcon.success {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid #22c55e;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.1);
+}
+
+.reportStatusIcon.success i {
+  color: #16a34a;
+  filter: drop-shadow(0 0 2px rgba(34, 197, 94, 0.3));
+}
+
+.reportStatusIcon.success:hover {
+  background: rgba(34, 197, 94, 0.25);
+  box-shadow: 0 3px 12px rgba(34, 197, 94, 0.4);
+}
+
+.reportStatusIcon.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  animation: pulseError 2s infinite;
+}
+
+.reportStatusIcon.error i {
+  color: #dc2626;
+}
+
+.reportStatusIcon.error:hover {
+  background: rgba(239, 68, 68, 0.25);
+  box-shadow: 0 3px 12px rgba(239, 68, 68, 0.4);
+  animation: none;
+}
+
+.shiftBadge.morning {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.shiftBadge.afternoon {
+  background: #fed7d7;
+  color: #c53030;
+  border: 1px solid #fc8181;
+}
+
+.shiftBadge.evening {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #a5b4fc;
+}
+
+.shiftBadge.continuing {
+  background: linear-gradient(45deg, #e0e7ff, #fef3c7);
+  border: 2px dashed #a5b4fc;
+  position: relative;
+}
+
+.shiftBadge.continuing::before {
+  content: '↪';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  font-size: 10px;
+  color: #6366f1;
+  background: white;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.shiftName {
+  display: block;
+  font-weight: 700;
+}
+
+.shiftTime {
+  display: block;
+  font-size: 0.65rem;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.dayOffBadge {
+  padding: 6px 12px;
+  background: #f3f4f6;
+  color: #6b7280;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.noScheduleMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.noScheduleMessage i {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  color: #d1d5db;
+}
+
+.noScheduleMessage h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 10px 0;
+}
+
+.noScheduleMessage p {
+  font-size: 1rem;
+  margin: 0 0 20px 0;
+  max-width: 400px;
+}
+
+/* Responsive for Work Schedule */
+@media (max-width: 768px) {
+  .scheduleControls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .monthSelector,
+  .yearSelector {
+    min-width: auto;
+  }
+
+  .calendarGrid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+
+  .dayCard {
+    min-height: 80px;
+    padding: 8px;
+  }
+
+  .dayNumber {
+    font-size: 1rem;
+    margin-bottom: 6px;
+  }
+
+  .shiftBadge {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+  }
+
+  .reportStatus {
+    min-width: 12px;
+  }
+
+  .reportStatus i {
+    font-size: 10px !important;
+  }
+
+  .reportStatusIcon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .reportStatusIcon i {
+    font-size: 10px;
+  }
+
+  .shiftBadge.continuing::before {
+    width: 10px;
+    height: 10px;
+    font-size: 8px;
+    top: -1px;
+    left: -1px;
+  }
+
+  .shiftTime {
+    font-size: 0.6rem;
+  }
+} 

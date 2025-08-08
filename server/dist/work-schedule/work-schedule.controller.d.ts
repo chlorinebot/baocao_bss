@@ -76,6 +76,41 @@ export declare class WorkScheduleController {
         error: any;
         data?: undefined;
     }>;
+    clearAllWorkSchedules(): Promise<{
+        success: boolean;
+        message: string;
+        error?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        error: any;
+    }>;
+    debugCheckDatabase(): Promise<{
+        success: boolean;
+        data: {
+            today: string;
+            totalSchedules: number;
+            todaySchedules: number;
+            allSchedules: any[];
+            todayScheduleDetail: import("../entities/work-schedule.entity").WorkSchedule[];
+        };
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: any;
+        data?: undefined;
+    }>;
+    createYesterdaySchedule(): Promise<{
+        success: boolean;
+        message: string;
+        data: import("../entities/work-schedule.entity").WorkSchedule;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: any;
+        message?: undefined;
+        data?: undefined;
+    }>;
     getScheduleStats(startDate: string, endDate: string): Promise<{
         success: boolean;
         message: string;

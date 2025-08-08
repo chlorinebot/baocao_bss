@@ -13,7 +13,6 @@ export declare class ReportsService {
         isWorkingTime?: boolean;
     }>;
     private translateShiftType;
-    private getCurrentShiftType;
     createReport(id_user: number, content: string): Promise<Report>;
     getAllReports(): Promise<Report[]>;
     getReportsByUserId(userId: number): Promise<Report[]>;
