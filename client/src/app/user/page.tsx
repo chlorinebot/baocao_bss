@@ -1051,7 +1051,7 @@ export default function UserPage() {
                   Nếu bạn gặp khó khăn hoặc cần hỗ trợ trong quá trình tạo báo cáo, vui lòng sử dụng tài liệu hướng dẫn sử dụng hoặc liên hệ với quản trị viên.
                 </p>
                 <div className={styles.helpActions}>
-                  <button className={styles.helpButton}>
+                  <button className={styles.helpButton} onClick={() => router.push('/lien-he-ho-tro')}>
                     <i className="bi bi-headset me-2"></i>
                     Liên hệ hỗ trợ
                   </button>
